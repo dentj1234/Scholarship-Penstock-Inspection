@@ -5,6 +5,7 @@ server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(('127.0.0.1', 8080)) # Bind to IP and Port
 server.listen(2) # Listen for connections
 
+
 print("Waiting for connection...")
 try:
     while True:

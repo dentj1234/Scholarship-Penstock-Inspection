@@ -3,7 +3,15 @@ function updateData() {
         .then(response => response.json())
         .then(data => {
             // Update the data display on the page
-            document.getElementById('data-display').textContent = data.data;
+            if (Array.isArray(data.data)) {
+                data.data.forEach((value, index) => {
+                    const element = document.getElementById(`data-display-${index}`);
+                    if (element) {
+                        const label = element.getAttribute('data-label');
+                        element.textContent = `${label}: ${value}`;
+                    }
+                });
+            }
         })
         .catch(error => {
             console.error('Error fetching data:', error);

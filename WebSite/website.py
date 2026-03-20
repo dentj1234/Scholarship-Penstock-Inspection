@@ -8,9 +8,6 @@ port = 8080
 
 client = None  # Global connection
 
-i = 0
-
-
 # Function to create a connection to the socket server
 def get_client():
     """Get or create persistent connection"""
@@ -34,6 +31,9 @@ app.secret_key = 'drewismyidol'
 def home():
     return render_template("index.html")
 
+i = 0
+data_array = [0,0,0,0]
+
 # Route to fetch data from the socket server
 @app.route('/data')
 def data():
@@ -41,11 +41,13 @@ def data():
     try:
         c = get_client()
         if c:
-            c.sendall(str(i).encode())  # Send a request to the socket server
-            i += 1
+            c.sendall(json.dumps(data_array).encode())  # Send a request to the socket server
+            data_array[0] += 1
+            data_array[1] += 2
+            data_array[2] += 4
             received_data = c.recv(1024).decode()
             print(f"Received: {received_data}")
-            return jsonify({"data": received_data})
+            return jsonify({"data": json.loads(received_data)})
     except Exception as e:
         print(f"Error: {e}")
         global client

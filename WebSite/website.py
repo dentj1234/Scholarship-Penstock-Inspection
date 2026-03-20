@@ -1,5 +1,6 @@
 import socket
 import time
+import json
 
 from flask import *
 
@@ -34,6 +35,22 @@ def home():
 i = 0
 data_array = [0,0,0,0]
 
+# Route to receive commands from the web page
+@app.route('/command', methods=['POST'])
+def command():
+    global data_array
+    try:
+        cmd = request.json
+        index = cmd.get('index')
+        value = cmd.get('value')
+        if 0 <= index < len(data_array):
+            data_array[index] = value
+            print(f"Set array[{index}] = {value}")
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": str(e)})
+    
 # Route to fetch data from the socket server
 @app.route('/data')
 def data():
@@ -42,12 +59,11 @@ def data():
         c = get_client()
         if c:
             c.sendall(json.dumps(data_array).encode())  # Send a request to the socket server
-            data_array[0] += 1
-            data_array[1] += 2
-            data_array[2] += 4
             received_data = c.recv(1024).decode()
             print(f"Received: {received_data}")
             return jsonify({"data": json.loads(received_data)})
+        else:
+            return jsonify({"error": "Unable to connect to socket server"})
     except Exception as e:
         print(f"Error: {e}")
         global client

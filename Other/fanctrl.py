@@ -1,5 +1,6 @@
 
 import subprocess
+import time
 
 def set_fan_speed():
     try:
@@ -12,3 +13,6 @@ def set_fan_speed():
         print("Error: 'pinctrl' command not found. Are you on a Raspberry Pi 5?")
 
 set_fan_speed()
+
+while True:
+    time.sleep(60)  # Sleep for 60 seconds before checking again

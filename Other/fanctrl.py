@@ -1,4 +1,4 @@
-import subprocess
+
 import subprocess
 
 def set_fan_speed():

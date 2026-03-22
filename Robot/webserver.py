@@ -2,6 +2,7 @@ import socket
 
 # Setup: AF_INET (IPv4), SOCK_STREAM (TCP)
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server.bind(('127.0.0.1', 8080)) # Bind to IP and Port
 server.listen(2) # Listen for connections
 

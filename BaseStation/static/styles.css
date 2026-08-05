@@ -1,0 +1,15 @@
+body {
+  background-color: lightblue;
+}
+
+.video-container {
+  height: 50vh;
+  width: 100vh;
+  overflow: hidden;
+}
+
+#vid {
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+}

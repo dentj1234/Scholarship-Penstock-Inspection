@@ -11,7 +11,6 @@ client = None  # Global connection
 
 # Function to create a connection to the socket server
 def get_client():
-    """Get or create persistent connection"""
     global client
     if client is None:
         try:
@@ -71,4 +70,4 @@ def data():
         return jsonify({"error": str(e)})
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8000)
+    app.run(host="0.0.0.0", debug=True, port=8000)

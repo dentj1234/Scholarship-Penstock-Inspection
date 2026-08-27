@@ -1,47 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Penstock Inspection Control</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='testingstyle.css') }}">
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script src="{{ url_for('static', filename='testingmain.js') }}"></script>
+    <title>Penstock Control</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='testingmain.js') }}" defer></script>
 </head>
 <body>
+    <!-- Dropdown to select the target node -->
+    <label for="nodeSelect">Target Node:</label>
+    <select id="nodeSelect">
+        <option value="0">Node 0</option>
+        <option value="2">Node 2</option>
+    </select>
 
-    <h2>🛰️ Penstock Robot Inspection Panel</h2>
+    <button id="cmdBtn">Send Command</button>
 
-    <div class="control-bar">
-        <label>Active Target: </label>
-        <button class="btn" onclick="setTarget(0)">Node 0 (End Robot)</button>
-        <button class="btn" onclick="setTarget(1)">Node 1 (Middle Relay)</button>
-        <span id="target-display" class="highlight">Controlling: Node 0</span>
-    </div>
-
-    <div class="grid">
-        <div class="card">
-            <h3>Camera Feed</h3>
-            <!--<iframe id="video-feed" src="http://192.168.1.3:8889/cam1"></iframe>-->
-            <iframe id="video-feed" src="http://127.0.0.1:8889/cam1"></iframe>
-            <div>
-                <button class="btn" onclick="switchCamera(0, '127.0.0.1')">Show Node 0 Stream</button>
-                <button class="btn" onclick="switchCamera(1, '192.168.1.2')">Show Node 1 Stream</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>Node Telemetry</h3>
-            <p><strong>Node 0 (End):</strong> <span id="node-0-telemetry">Connecting...</span></p>
-            <p><strong>Node 1 (Middle):</strong> <span id="node-1-telemetry">Connecting...</span></p>
-            
-            <h3>Manual Driving Controls</h3>
-            <button class="btn" id="btn-0">Btn 0 (Fwd)</button>
-            <button class="btn" id="btn-1">Btn 1 (Rev)</button>
-            <button class="btn" id="btn-2">Btn 2 (Left)</button>
-            <button class="btn" id="btn-3">Btn 3 (Right)</button>
-        </div>
-    </div>
-
-    <script src="{{ url_for('static', filename='main.js') }}"></script>
 </body>
 </html>

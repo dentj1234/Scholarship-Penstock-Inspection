@@ -1,46 +1,53 @@
-from flask import Flask, render_template
-from flask_socketio import SocketIO, emit, join_room
+from flask import Flask, render_template, request
+from flask_socketio import SocketIO, emit
+import time
+import threading
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'drewismyidol'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-telemetry_store = {}
+connected_nodes = {}
+sid_to_node = {}
+node_to_sid = {}
+
+@socketio.on('connect')
+def handle_connect(auth=None):
+    print(f"A node has connected. Session ID: {request.sid}")
+
+@socketio.on('disconnect')
+def handle_disconnect(auth=None):
+    # Find and remove the node when it drops off
+    node_name = connected_nodes.pop(request.sid, "Unknown Node")
+    print(f"Node disconnected: {node_name} (Session ID: {request.sid})")
+
+@socketio.on('robot_telemetry')
+def handle_telemetry(data):
+    node_name = str(data.get('node', 'unknown_node'))
+    
+    # Map this session ID to this specific node name
+    connected_nodes[request.sid] = node_name
+    node_to_sid[node_name] = request.sid 
+    
+    print(f"Received from [{node_name}]: Battery={data.get('battery')}V")
+
+@socketio.on('web_trigger_command')
+def handle_web_command(data):
+    target_node = str(data.get('target_node'))
+    action = data.get('action')
+    send_command(target_node, {'action': action})
+
+def send_command(node_name, command_payload):
+    target_sid = node_to_sid.get(node_name)
+    if target_sid:
+        socketio.emit('target_command', command_payload, to=target_sid)
+        print(f"Sent command to {node_name}: {command_payload}")
+    else:
+        print(f"Could not find active session for node: {node_name}")
 
 @app.route('/')
-@app.route('/home')
-def home():
+def index():
     return render_template('testingindex.html')
 
-# Robot Node connects and registers its integer ID (e.g. 0, 1, 2)
-@socketio.on('register_node')
-def handle_register(data):
-    node_id = data.get('node_id') # e.g. 0 or 1
-    if node_id is not None:
-        join_room(str(node_id))
-        print(f"✅ Robot Node registered: Node {node_id}")
-
-@socketio.on('telemetry')
-def handle_telemetry(data):
-    node_id = data.get('node_id')
-    if node_id is not None:
-        telemetry_store[str(node_id)] = data
-        emit('ui_update', telemetry_store, broadcast=True)
-
-# Target node command routing
-@socketio.on('send_command_to_node')
-def handle_node_command(data):
-    target = str(data.get('target'))  # "0", "1", etc.
-    index = data.get('index')
-    value = data.get('value')
-    
-    emit('execute_command', {'index': index, 'value': value}, to=target)
-
-@socketio.on('toggle_video_stream')
-def handle_video_toggle(data):
-    target = str(data.get('target'))
-    action = data.get('action') # 'start' or 'stop'
-    emit('camera_control', {'action': action}, to=target)
-
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=8000, debug=False)
+    # Listen on all interfaces on port 8000
+    socketio.run(app, host='0.0.0.0', port=8000)

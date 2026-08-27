@@ -23,6 +23,28 @@ run_cmd("sysctl net.ipv6.conf.all.forwarding=1")
 with open("/etc/sysctl.d/99-ipforward.conf", "w") as f:
     f.write("net.ipv4.ip_forward=1\nnet.ipv6.conf.all.forwarding=1\n")
 
+# 4. Assign Netplan Static IP
+print("Configuring Netplan...")
+netplan_conf = """network:
+  version: 2
+  ethernets:
+    eth0:
+      addresses:
+        - 192.168.1.1/24
+      routes:
+        - to: default
+          via: 192.168.1.1
+"""
+os.makedirs("/etc/netplan", exist_ok=True)
+with open("/etc/netplan/50-cloud-init.yaml", "w") as f:
+    f.write(netplan_conf)
+
+# Apply netplan
+try:
+    run_cmd("sudo netplan apply")
+except Exception as e:
+    print(f"Warning running netplan apply: {e}")
+
 # 2. Install DHCP Server, Podman, Pip, Flask, Tcpdump
 print("Installing Base Packages...")
 run_cmd("apt update && apt install -y isc-dhcp-server podman tcpdump python3-pip python3-flask wget")
@@ -30,36 +52,20 @@ run_cmd("apt update && apt install -y isc-dhcp-server podman tcpdump python3-pip
 # 3. Configure /etc/dhcp/dhcpd.conf
 print("Configuring dhcpd.conf...")
 dhcp_conf = """
+default-lease-time 600;
+max-lease-time 7200;
+authoritative;
+
 subnet 192.168.1.0 netmask 255.255.255.0 {
-	range 192.168.1.2 192.168.1.50;
-	option routers 192.168.1.1;
+    range 192.168.1.50 192.168.1.200;
+    option routers 192.168.1.1;
+    option domain-name-servers 1.1.1.1, 8.8.8.8;
 }
 """
-with open("/etc/dhcp/dhcpd.conf", "a") as f:
+with open("/etc/dhcp/dhcpd.conf", "w") as f:
     f.write(dhcp_conf)
 
-# 4. Assign Netplan Static IP
-print("Configuring Netplan...")
-netplan_content = """network:
-	version: 2
-	ethernets:
-		eth0:
-			dhcp4: false
-			addresses:
-				- 192.168.1.1/24
-			routes:
-				- to: default
-				  via: 192.168.1.1
-"""
-os.makedirs("/etc/netplan", exist_ok=True)
-with open("/etc/netplan/50-cloud-init.yaml", "w") as f:
-    f.write(netplan_content)
 
-# Apply netplan
-try:
-    run_cmd("netplan apply")
-except Exception as e:
-    print(f"Warning running netplan apply: {e}")
 
 # 5. Assign Interface for DHCP
 print("Assigning interface for DHCP...")
@@ -70,7 +76,7 @@ with open("/etc/default/isc-dhcp-server", "w") as f:
 print("Adding 5s startup override to isc-dhcp-server...")
 os.makedirs("/etc/systemd/system/isc-dhcp-server.service.d/", exist_ok=True)
 override_conf = """[Service]
-Restart=on-failure
+Restart=always
 RestartSec=5s
 ExecStartPre=/bin/sleep 5
 """
@@ -88,16 +94,15 @@ try:
 except Exception as e:
     print(f"Warning setting fan PWM: {e}")
 
-# 8. Setup Base Station Python Script & Service
-base_dir = "/home/jaydenrobot/base"
+# 9. Run Python File as service
+base_dir = "/home/jaydenrobot/BaseCode"
 os.makedirs(base_dir, exist_ok=True)
+subprocess.run(["chown", "-R", "jaydenrobot:jaydenrobot", base_dir], check=True)
+subprocess.run(["chmod", "-R", "775", base_dir], check=True)
 
-# Example placeholder script (Replace content or overwrite base_script.py directly)
-base_script_path = f"{base_dir}/base_script.py"
-if not os.path.exists(base_script_path):
-    with open(base_script_path, "w") as f:
-        f.write("#!/usr/bin/env python3\nprint('Base Station script running...')\n")
-    run_cmd(f"chmod +x {base_script_path}")
+# Point systemd directly to your main Flask entry point
+# Change 'base_script.py' to your actual Flask file name if it's different (e.g., app.py)
+main_script = f"{base_dir}/BaseCode.py"
 
 print("Creating basecode.service...")
 base_service_content = f"""[Unit]
@@ -106,21 +111,23 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-User=root
-Group=root
+User=jaydenrobot
+Group=jaydenrobot
 WorkingDirectory={base_dir}
-ExecStart=/usr/bin/python3 {base_script_path}
+ExecStart=/usr/bin/python3 {main_script}
 Restart=always
 RestartSec=3
 
 [Install]
 WantedBy=multi-user.target
 """
+
 with open("/etc/systemd/system/basecode.service", "w") as f:
     f.write(base_service_content)
 
-run_cmd("systemctl daemon-reload")
-run_cmd("systemctl enable basecode.service")
+subprocess.run(["systemctl", "daemon-reload"], check=True)
+subprocess.run(["systemctl", "enable", "basecode.service"], check=True)
+subprocess.run(["systemctl", "start", "basecode.service"], check=True)
 
 # 9. Install UniFi OS Server
 print("\n--- Install UniFi OS Server ---")
@@ -129,7 +136,16 @@ unifi_url = input("Paste the UniFi OS Server Linux (arm64) download link from ui
 if unifi_url:
     installer_path = "/tmp/unifi_os_installer"
     print("Downloading installer...")
-    urllib.request.urlretrieve(unifi_url, installer_path)
+    
+    # Use custom User-Agent to avoid HTTP 403 Forbidden
+    req = urllib.request.Request(
+        unifi_url, 
+        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    )
+    
+    with urllib.request.urlopen(req) as response, open(installer_path, 'wb') as out_file:
+        out_file.write(response.read())
+        
     run_cmd(f"chmod +x {installer_path}")
     print("Running UniFi OS Server installer...")
     run_cmd(f"{installer_path}")

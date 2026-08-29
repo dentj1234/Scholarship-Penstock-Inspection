@@ -5,7 +5,7 @@ import subprocess
 import urllib.request
 
 if os.geteuid() != 0:
-    print("❌ Error: Must be run as root! Use: sudo python3 install_node.py")
+    print("Error: Must be run as root! Use: sudo python3 install_node.py")
     sys.exit(1)
 
 def run_cmd(cmd):
@@ -14,9 +14,9 @@ def run_cmd(cmd):
 
 print("--- 🤖 Setting Up Penstock Node Pi ---")
 
-# -------------------------------------------------------------------
+
 # 1. Select Node Index & Setup Parameters
-# -------------------------------------------------------------------
+
 node_idx = input("Enter Node Index (0 for End Robot [192.168.1.2], 1 for Middle Relay [192.168.1.3]): ").strip()
 
 if node_idx == "0":
@@ -26,14 +26,14 @@ elif node_idx == "1":
     node_ip = "192.168.1.3"
     node_name = "Middle Relay"
 else:
-    print("❌ Invalid node index selected! Must be 0 or 1.")
+    print("Invalid node index selected! Must be 0 or 1.")
     sys.exit(1)
 
 print(f"Configuring as Node {node_idx} ({node_name}) with IP {node_ip}...")
 
-# -------------------------------------------------------------------
+
 # 2. ALL ONLINE OPERATIONS (Apt & Web Downloads)
-# -------------------------------------------------------------------
+
 print("\n[Step 1/5] Installing Base Packages via apt...")
 run_cmd("apt update && apt install -y wget tar libcamera-dev libfreetype6 python3-pip python3-socketio-client network-manager")
 
@@ -57,9 +57,9 @@ run_cmd(f"tar -xzvf {installer_path} -C {install_dir}")
 if os.path.exists(installer_path):
     os.remove(installer_path)
 
-# -------------------------------------------------------------------
+
 # 3. LOCAL CONFIGURATIONS & SERVICE FILE GENERATION
-# -------------------------------------------------------------------
+
 print("\n[Step 3/5] Creating service configs and directories...")
 
 # MediaMTX Configuration
@@ -139,9 +139,9 @@ if os.path.exists("/etc/netplan/50-cloud-init.yaml"):
     except Exception:
         pass
 
-# -------------------------------------------------------------------
+
 # 4. NETWORK RECONFIGURATION (NetworkManager / nmcli)
-# -------------------------------------------------------------------
+
 print("\n[Step 4/5] Applying Static IP Network Configuration via NetworkManager...")
 
 try:
@@ -161,9 +161,9 @@ try:
 except Exception as e:
     print(f"Warning configuring eth0 via nmcli: {e}")
 
-# -------------------------------------------------------------------
+
 # 5. START SERVICES
-# -------------------------------------------------------------------
+
 print("\n[Step 5/5] Enabling and Starting Services...")
 run_cmd("systemctl daemon-reload")
 run_cmd("systemctl enable mediamtx.service")
@@ -171,6 +171,6 @@ run_cmd("systemctl start mediamtx.service")
 run_cmd("systemctl enable node_code.service")
 run_cmd("systemctl start node_code.service")
 
-print("\n✅ Node Setup Finished Successfully!")
+print("\n---------- Node Setup Finished Successfully! ----------")
 print(f"Assigned Static IP: {node_ip}")
 print(f"Place your node code script in: {node_dir}/node_daemon.py")

@@ -4,16 +4,39 @@
     <title>Penstock Control</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <script src="{{ url_for('static', filename='testingmain.js') }}" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='testingstyles.css') }}">
 </head>
 <body>
-    <!-- Dropdown to select the target node -->
-    <label for="nodeSelect">Target Node:</label>
-    <select id="nodeSelect">
-        <option value="0">Node 0</option>
-        <option value="2">Node 2</option>
-    </select>
+    <div class="main-container">
+        <div class="video-section">
+            <div>
+                <button onclick="switchCamera('http://192.168.1.2:8889/cam1')">View Node 0 Camera</button>
+                <button onclick="switchCamera('http://192.168.1.3:8889/cam1')">View Node 2 Camera</button>
+            </div>
+            
+            <iframe id="camStream" src="http://192.168.1.2:8889/cam1" width="640" height="432"></iframe>
+            
+            <div class="bottom-controls-row">
+                <div class="control-group">
+                    <label for="nodeSelect">Target Node:</label>
+                    <select id="nodeSelect">
+                        <option value="0">Node 0</option>
+                        <option value="2">Node 2</option>
+                    </select>
+                </div>
 
-    <button id="cmdBtn">Send Command</button>
+                <div class="telemetry-box">
+                    <strong>Telemetry:</strong> <span id="telemetryData">Waiting for data...</span>
+                </div>
+            </div>
+        </div>
 
+        <div class="dpad-container">
+            <button class="cmd-btn" data-action="forward" id="btnForward">Forward</button>
+            <button class="cmd-btn" data-action="left" id="btnLeft">Left</button>
+            <button class="cmd-btn" data-action="right" id="btnRight">Right</button>
+            <button class="cmd-btn" data-action="backward" id="btnBackward">Backward</button>
+        </div>
+    </div>
 </body>
 </html>

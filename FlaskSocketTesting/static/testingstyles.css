@@ -1,0 +1,105 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #121212;
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.main-container {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    background: #1e1e1e;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+}
+
+.video-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.camera-controls {
+    display: flex;
+    gap: 10px;
+}
+
+iframe {
+    width: 768px;
+    height: 432px;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background: #000;
+}
+
+.bottom-controls-row {
+    display: flex;
+    gap: 10px;
+    width: 768px;
+}
+
+.control-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.telemetry-box {
+    flex: 1;
+    background-color: #161616;
+    border: 1px solid #333;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #00ffcc;
+    display: flex;
+    align-items: center;
+}
+
+.dpad-container {
+    display: grid;
+    grid-template-areas:
+        ". forward ."
+        "left . right"
+        ". backward .";
+    gap: 10px;
+    width: 240px;
+}
+
+.dpad-container button, .video-section button, select {
+    padding: 12px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    background-color: #333;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 6px;
+}
+
+.dpad-container button:hover, .video-section button:hover {
+    background-color: #444;
+}
+
+select {
+    width: 100%;
+}
+
+#btnForward { grid-area: forward; }
+#btnLeft { grid-area: left; }
+#btnRight { grid-area: right; }
+#btnBackward { grid-area: backward; }

@@ -29,6 +29,7 @@ def handle_telemetry(data):
     node_to_sid[node_name] = request.sid 
     
     print(f"Received from [{node_name}]: Battery={data.get('battery')}V")
+    socketio.emit('update_telemetry', data)
 
 @socketio.on('web_trigger_command')
 def handle_web_command(data):

@@ -150,10 +150,14 @@ if os.path.exists(config_path):
         config_content = f.read()
     
     # Ensure UART0 is turned on in firmware
-    if "dtparam=uart0=on" not in config_content:
+    if "enable_uart=1" not in config_content:
         with open(config_path, "a") as f:
-            f.write("\n# Enable UART0 on GPIO 14/15 (ttyAMA0)\ndtparam=uart0=on\n")
-        print("✅ Added dtparam=uart0=on to /boot/firmware/config.txt")
+            f.write("\n# Enable UART0 on GPIO 14/15 (ttyAMA0)\nenable_uart=1\n")
+        print("✅ Added enable_uart=1 to /boot/firmware/config.txt")
+    if "dtoverlay=disable-bt" not in config_content:
+        with open(config_path, "a") as f:
+            f.write("\ndtoverlay=disable-bt\n")
+        print("✅ Added dtoverlay=disable-bt to /boot/firmware/config.txt")
 else:
     print("⚠️ Warning: /boot/firmware/config.txt not found.")
 
@@ -161,8 +165,8 @@ else:
 run_cmd("usermod -aG dialout jaydenrobot")
 
 # Disable the Linux serial console login service so Python owns the port safely
-run_cmd("systemctl stop serial-getty@ttyAMA0.service || true")
-run_cmd("systemctl disable serial-getty@ttyAMA0.service || true")
+run_cmd("sudo systemctl disable serial-getty@ttyAMA0.service")
+run_cmd("sudo systemctl disable serial-getty@serial0.service")
 
 
 

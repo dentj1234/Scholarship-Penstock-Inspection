@@ -68,7 +68,7 @@ if __name__ == '__main__':
                 try_connect()
                 
             # Loop delay
-            time.sleep(2)
+            time.sleep(1)
             
     except KeyboardInterrupt:
         if sio.connected:

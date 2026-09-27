@@ -141,6 +141,29 @@ if os.path.exists("/etc/netplan/50-cloud-init.yaml"):
         pass
 
 
+# --- Enable Hardware UART for Microcontroller Communication ---
+print("\n[Configuring Hardware UART]")
+config_path = "/boot/firmware/config.txt"
+
+if os.path.exists(config_path):
+    with open(config_path, "r") as f:
+        config_content = f.read()
+    
+    # Append enable_uart=1 if it isn't already there
+    if "enable_uart=1" not in config_content:
+        with open(config_path, "a") as f:
+            f.write("\n# Enable UART for Microcontroller\nenable_uart=1\n")
+        print("✅ Added enable_uart=1 to /boot/firmware/config.txt")
+else:
+    print("⚠️ Warning: /boot/firmware/config.txt not found. UART might need manual setup.")
+
+# Stop and disable the Linux serial console login service so Python can use the port safely
+run_cmd("systemctl stop serial-getty@ttyAMA0.service || true")
+run_cmd("systemctl disable serial-getty@ttyAMA0.service || true")
+
+
+
+
 # 4. NETWORK RECONFIGURATION (NetworkManager / nmcli)
 
 print("\n[Step 4/5] Applying Static IP Network Configuration via NetworkManager...")

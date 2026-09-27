@@ -141,26 +141,28 @@ if os.path.exists("/etc/netplan/50-cloud-init.yaml"):
         pass
 
 
-# --- Enable Hardware UART for Microcontroller Communication ---
-print("\n[Configuring Hardware UART]")
+# --- Enable Hardware UART and Serial Permissions for Pi 5 ---
+print("\n[Configuring Hardware UART and Permissions]")
 config_path = "/boot/firmware/config.txt"
 
 if os.path.exists(config_path):
     with open(config_path, "r") as f:
         config_content = f.read()
     
-    # Append enable_uart=1 if it isn't already there
-    if "enable_uart=1" not in config_content:
+    # Ensure UART0 is turned on in firmware
+    if "dtparam=uart0=on" not in config_content:
         with open(config_path, "a") as f:
-            f.write("\n# Enable UART for Microcontroller\nenable_uart=1\n")
-        print("✅ Added enable_uart=1 to /boot/firmware/config.txt")
+            f.write("\n# Enable UART0 on GPIO 14/15 (ttyAMA0)\ndtparam=uart0=on\n")
+        print("✅ Added dtparam=uart0=on to /boot/firmware/config.txt")
 else:
-    print("⚠️ Warning: /boot/firmware/config.txt not found. UART might need manual setup.")
+    print("⚠️ Warning: /boot/firmware/config.txt not found.")
 
-# Stop and disable the Linux serial console login service so Python can use the port safely
+# Add 'jaydenrobot' user to the dialout group for serial port access
+run_cmd("usermod -aG dialout jaydenrobot")
+
+# Disable the Linux serial console login service so Python owns the port safely
 run_cmd("systemctl stop serial-getty@ttyAMA0.service || true")
 run_cmd("systemctl disable serial-getty@ttyAMA0.service || true")
-
 
 
 

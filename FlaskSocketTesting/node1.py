@@ -7,7 +7,7 @@ sio = socketio.Client()
 
 # --- UART Setup ---
 # Ensure your port matches (/dev/serial0 or /dev/ttyAMA0)
-ser = serial.Serial('/dev/serial0', baudrate=115200, timeout=0.1)
+ser = serial.Serial('/dev/ttyAMA0', baudrate=115200, timeout=0.1)
 HEADER = 0xAA
 
 

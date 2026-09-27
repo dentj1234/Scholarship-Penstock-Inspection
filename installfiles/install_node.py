@@ -35,8 +35,8 @@ print(f"Configuring as Node {node_idx} ({node_name}) with IP {node_ip}...")
 # 2. ALL ONLINE OPERATIONS (Apt & Web Downloads)
 
 print("\n[Step 1/5] Installing Base Packages via apt...")
-run_cmd("apt update && apt install -y wget tar libcamera-dev libfreetype6 python3-pip python3-socketio-client network-manager")
-run_cmd("pip3 install pyserial") # install pyserial for UART communication
+run_cmd("apt update && apt install -y wget tar libcamera-dev libfreetype6 python3-pip network-manager")
+run_cmd("pip3 install python-socketio pyserial --break-system-packages") # install pyserial for UART communication
 
 print("\n[Step 2/5] Downloading MediaMTX binary...")
 mediamtx_ver = "v1.12.3"

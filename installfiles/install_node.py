@@ -116,7 +116,7 @@ Wants=network-online.target mediamtx.service
 User=jaydenrobot
 Group=jaydenrobot
 WorkingDirectory={node_dir}
-ExecStart=/usr/bin/python3 {main_script}
+ExecStart=/usr/bin/python3 -u {main_script}
 Restart=always
 RestartSec=3
 

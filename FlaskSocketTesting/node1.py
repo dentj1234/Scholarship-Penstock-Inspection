@@ -5,7 +5,7 @@ import serial
 sio = socketio.Client()
 
 ser = serial.Serial(
-    port='/dev/serial0',
+    port='/dev/ttyAMA0',
     baudrate=115200,
     timeout=1,
 )
@@ -38,6 +38,8 @@ def try_connect():
 
 n = 0
 
+payload_array = [0x20, 0x40, 1, 0, 0, 1, 186, 200]
+
 if __name__ == '__main__':
     # Initial connection attempt
     try_connect()
@@ -46,8 +48,11 @@ if __name__ == '__main__':
     try:
         while True:
             # 1. Run your UART communication continuously regardless of connection status
+            
+            
             try:
-                ser.write(b'AT\r\n')
+                ser.write(bytes(payload_array))
+                print("Sent payload to UART.")
                 time.sleep(0.1)
                 response = ser.read(ser.in_waiting or 1)
                 if response:

@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     try:
         while True:
-            # 1. Send command packet to PIC every 0.1 seconds (rate-limited without blocking)
+            # 1. Send command packet to PIC every 0.1 seconds
             if time.time() - last_command_time >= 0.1:
                 try:
                     ser.write(bytes(payload_array))
@@ -50,23 +50,22 @@ if __name__ == '__main__':
                 except Exception as uart_err:
                     print(f"UART Write Error: {uart_err}")
 
-            # 2. Continuously listen for incoming bytes from the PIC
+            # 2. Continuously check for any incoming serial data
             if ser.in_waiting > 0:
-                incoming_data = ser.read(ser.in_waiting)
+                raw_bytes = ser.read(ser.in_waiting)
+                print(f"DEBUG: Raw bytes received from PIC -> {raw_bytes}") # <--- Shows us what is actually arriving
                 
-                # Scan buffer for telemetry header [0x30, 0x50]
-                for i in range(len(incoming_data) - 2):
-                    if incoming_data[i] == 0x30 and incoming_data[i+1] == 0x50:
-                        battery_byte = incoming_data[i+2]
+                # Scan for telemetry header [0x30, 0x50]
+                for i in range(len(raw_bytes) - 2):
+                    if raw_bytes[i] == 0x30 and raw_bytes[i+1] == 0x50:
+                        battery_byte = raw_bytes[i+2]
                         
-                        # Convert to real voltage
                         estimated_adc = battery_byte * 16
                         pin_voltage = (estimated_adc / 4095.0) * 3.3
                         battery_voltage = round(pin_voltage * 4, 2)
                         
-                        print(f"🔥 RECEIVED BATTERY TELEMETRY: {battery_voltage}V")
+                        print(f"🔥 RECEIVED BATTERY TELEMETRY: {battery_voltage}V (Byte: {battery_byte})")
 
-                        # Emit to Socket.IO if connected
                         if sio.connected:
                             try:
                                 telemetry_data = {'battery_voltage': battery_voltage, 'node': '0'}
@@ -77,9 +76,9 @@ if __name__ == '__main__':
 
             # Reconnect to server if dropped
             if not sio.connected:
+                # (Optional: Comment out try_connect() here temporarily if you don't have the base server running yet so it stops spamming your journalctl)
                 try_connect()
                 
-            # Small sleep to prevent CPU hogging
             time.sleep(0.01)
             
     except KeyboardInterrupt:

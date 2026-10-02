@@ -56,23 +56,28 @@ if __name__ == '__main__':
                 print(f"DEBUG: Raw bytes received from PIC -> {raw_bytes}") # <--- Shows us what is actually arriving
                 
                 # Scan for telemetry header [0x30, 0x50]
-                for i in range(len(raw_bytes) - 2):
-                    if raw_bytes[i] == 0x30 and raw_bytes[i+1] == 0x50:
-                        battery_byte = raw_bytes[i+2]
-                        
-                        estimated_adc = battery_byte * 16
-                        pin_voltage = (estimated_adc / 4095.0) * 3.3
-                        battery_voltage = round(pin_voltage * 4, 2)
-                        
-                        print(f"🔥 RECEIVED BATTERY TELEMETRY: {battery_voltage}V (Byte: {battery_byte})")
+                # 2. Check for incoming telemetry bytes (wait for full 3-byte packet: [0x30, 0x50, byte])
+            if ser.in_waiting >= 3:
+                raw_bytes = ser.read(3) # Read the exact 3 bytes
+                
+                if raw_bytes[0] == 0x30 and raw_bytes[1] == 0x50:
+                    battery_byte = raw_bytes[2]
+                    
+                    # Convert 8-bit byte back to real 3S battery voltage
+                    estimated_adc = battery_byte * 16
+                    pin_voltage = (estimated_adc / 4095.0) * 3.3
+                    battery_voltage = round(pin_voltage * 4, 2)
+                    
+                    print(f"🔥 RECEIVED BATTERY TELEMETRY: {battery_voltage}V (Byte: {battery_byte})")
 
-                        if sio.connected:
-                            try:
-                                telemetry_data = {'battery_voltage': battery_voltage, 'node': '0'}
-                                sio.emit('robot_telemetry', telemetry_data)
-                            except Exception as e:
-                                print(f"Emit failed: {e}")
-                        break
+                    # Emit to Socket.IO if connected
+                    if sio.connected:
+                        try:
+                            telemetry_data = {'battery_voltage': battery_voltage, 'node': '0'}
+                            sio.emit('robot_telemetry', telemetry_data)
+                        except Exception as e:
+                            print(f"Emit failed: {e}")
+                    break
 
             # Reconnect to server if dropped
             if not sio.connected:

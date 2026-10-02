@@ -50,15 +50,10 @@ if __name__ == '__main__':
                 except Exception as uart_err:
                     print(f"UART Write Error: {uart_err}")
 
-            # 2. Continuously check for any incoming serial data
-            if ser.in_waiting > 0:
-                raw_bytes = ser.read(ser.in_waiting)
-                print(f"DEBUG: Raw bytes received from PIC -> {raw_bytes}") # <--- Shows us what is actually arriving
-                
-                # Scan for telemetry header [0x30, 0x50]
-                # 2. Check for incoming telemetry bytes (wait for full 3-byte packet: [0x30, 0x50, byte])
+            # 2. Check for incoming telemetry bytes (wait for at least 3 bytes)
             if ser.in_waiting >= 3:
-                raw_bytes = ser.read(3) # Read the exact 3 bytes
+                raw_bytes = ser.read(3) # Grab the exact 3-byte chunk
+                print(f"DEBUG: Read 3 bytes -> {raw_bytes}")
                 
                 if raw_bytes[0] == 0x30 and raw_bytes[1] == 0x50:
                     battery_byte = raw_bytes[2]
@@ -77,11 +72,12 @@ if __name__ == '__main__':
                             sio.emit('robot_telemetry', telemetry_data)
                         except Exception as e:
                             print(f"Emit failed: {e}")
-                    break
+                else:
+                    # If we accidentally locked onto a misaligned byte, put it back or flush
+                    pass
 
             # Reconnect to server if dropped
             if not sio.connected:
-                # (Optional: Comment out try_connect() here temporarily if you don't have the base server running yet so it stops spamming your journalctl)
                 try_connect()
                 
             time.sleep(0.01)

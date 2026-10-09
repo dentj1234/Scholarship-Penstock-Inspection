@@ -34,6 +34,7 @@ this_char = 0
 telemetry_packet = [0, 0, 0]
 packet_runner = 0
 
+# Payload array is: Header Byte 1, Header Byte 2, Forward, Backward, Turn Left, Turn Right, Motor Speed, Fan speed
 payload_array = [0x20, 0x40, 1, 0, 0, 1, 186, 200]
 
 if __name__ == '__main__':

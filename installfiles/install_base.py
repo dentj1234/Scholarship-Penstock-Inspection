@@ -47,7 +47,7 @@ except Exception as e:
 
 # 2. Install DHCP Server, Podman, Pip, Flask, Tcpdump
 print("Installing Base Packages...")
-run_cmd("apt update && apt install -y isc-dhcp-server podman tcpdump python3-pip python3-flask wget")
+run_cmd("apt update && apt install -y isc-dhcp-server podman tcpdump python3-pip python3-flask python3-flask-socketio wget")
 
 # 3. Configure /etc/dhcp/dhcpd.conf
 print("Configuring dhcpd.conf...")

@@ -13,6 +13,8 @@ ser = serial.Serial(
 @sio.event
 def connect():
     print("Connected to base station server!")
+    sio.emit('register_node', {'node': '0'})
+    print("Requested registration with the base station as node 0.")
 
 @sio.event
 def disconnect():

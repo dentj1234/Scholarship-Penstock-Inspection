@@ -16,17 +16,40 @@ def handle_connect(auth=None):
 
 @socketio.on('disconnect')
 def handle_disconnect(auth=None):
-    # Find and remove the node when it drops off
-    node_name = connected_nodes.pop(request.sid, "Unknown Node")
+    # Remove the node's routing entry when this session drops off.
+    node_name = connected_nodes.pop(request.sid, None)
+    if node_name and node_to_sid.get(node_name) == request.sid:
+        node_to_sid.pop(node_name, None)
+    if node_name is None:
+        node_name = "Unknown Node"
     print(f"Node disconnected: {node_name} (Session ID: {request.sid})")
+
+def register_node_session(node_name, sid):
+    # If the same node reconnects, discard its old session mapping.
+    previous_sid = node_to_sid.get(node_name)
+    if previous_sid and previous_sid != sid:
+        connected_nodes.pop(previous_sid, None)
+
+    connected_nodes[sid] = node_name
+    node_to_sid[node_name] = sid
+
+@socketio.on('register_node')
+def handle_register_node(data):
+    node_name = str(data.get('node', '')).strip()
+    if not node_name:
+        print(f"Rejected node registration without a node name: {data}")
+        return {'ok': False, 'error': 'missing_node'}
+
+    register_node_session(node_name, request.sid)
+    print(f"Registered node [{node_name}] (Session ID: {request.sid})")
+    return {'ok': True, 'node': node_name}
 
 @socketio.on('robot_telemetry')
 def handle_telemetry(data):
     node_name = str(data.get('node', 'unknown_node'))
     
-    # Map this session ID to this specific node name
-    connected_nodes[request.sid] = node_name
-    node_to_sid[node_name] = request.sid 
+    # Keep this session's routing registration in sync with its telemetry.
+    register_node_session(node_name, request.sid)
     
     print(f"Received from [{node_name}]: Battery={data.get('battery')}V")
     socketio.emit('update_telemetry', data)

@@ -24,7 +24,7 @@ def handle_target_command(data):
 
 def try_connect():
     try:
-        sio.connect('http://127.0.0.1:8000') # Update to your base station IP if needed
+        sio.connect('http://192.168.1.1:8000') # Base station Pi
     except Exception:
         pass
 

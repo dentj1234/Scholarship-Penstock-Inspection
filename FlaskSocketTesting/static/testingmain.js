@@ -1,5 +1,28 @@
 const socket = io();
 
+socket.on('connect', () => {
+    console.log(`Connected to base Socket.IO server: ${socket.id}`);
+});
+
+socket.on('connect_error', (error) => {
+    console.error('Socket.IO connection error:', error.message);
+});
+
+socket.on('disconnect', (reason) => {
+    console.warn('Disconnected from base Socket.IO server:', reason);
+});
+
+function sendRobotCommand(targetNode, action) {
+    socket.emit('web_trigger_command', {
+        target_node: targetNode,
+        action: action
+    }, (ack) => {
+        console.log('Base station command result:', ack);
+    });
+
+    console.log(`Command requested: [${action}] to Node ${targetNode}; connected=${socket.connected}`);
+}
+
 const arrowKeyMap = {
     'ArrowUp': 'forward',
     'ArrowDown': 'backward',
@@ -19,12 +42,7 @@ document.querySelectorAll('.cmd-btn').forEach(button => {
         const selectedNode = document.getElementById('nodeSelect').value;
         const actionType = button.getAttribute('data-action');
         
-        socket.emit('web_trigger_command', {
-            target_node: selectedNode,
-            action: actionType
-        });
-        
-        console.log(`Sent command [${actionType}] to Node ${selectedNode}`);
+        sendRobotCommand(selectedNode, actionType);
     });
 });
 
@@ -37,12 +55,7 @@ document.addEventListener('keydown', (event) => {
 
     const selectedNode = document.getElementById('nodeSelect').value;
 
-    socket.emit('web_trigger_command', {
-        target_node: selectedNode,
-        action: action
-    });
-
-    console.log(`Keyboard command [${action}] sent to Node ${selectedNode}`);
+    sendRobotCommand(selectedNode, action);
 });
 
 

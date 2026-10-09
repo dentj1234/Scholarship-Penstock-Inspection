@@ -20,7 +20,23 @@ def disconnect():
 
 @sio.on('target_command')
 def handle_target_command(data):
-    print(f"COMMAND RECEIVED FROM BASE: {data}")
+    action = data.get('action')
+    direction_flags = {
+        'forward':  (1, 0, 0, 0),
+        'backward': (0, 1, 0, 0),
+        'left':     (0, 0, 1, 0),
+        'right':    (0, 0, 0, 1),
+        'stop':     (0, 0, 0, 0),
+    }
+
+    flags = direction_flags.get(action)
+    if flags is None:
+        print(f"Ignoring unknown command: {data}")
+        return
+
+    # Payload bytes 2-5 are forward, backward, turn-left, and turn-right.
+    payload_array[2:6] = flags
+    print(f"COMMAND RECEIVED FROM BASE: {action}; UART payload: {payload_array}")
 
 def try_connect():
     try:
@@ -34,8 +50,9 @@ this_char = 0
 telemetry_packet = [0, 0, 0]
 packet_runner = 0
 
-# Payload array is: Header Byte 1, Header Byte 2, Forward, Backward, Turn Left, Turn Right, Motor Speed, Fan speed
-payload_array = [0x20, 0x40, 1, 0, 0, 1, 186, 200]
+# Payload array: Header 1, Header 2, Forward, Backward, Turn Left, Turn Right, Motor Speed, Fan Speed.
+# Start with all movement flags clear so the PIC receives a stopped command at startup.
+payload_array = [0x20, 0x40, 0, 0, 0, 0, 186, 200]
 
 if __name__ == '__main__':
     try_connect()

@@ -74,7 +74,7 @@ iframe {
     display: grid;
     grid-template-areas:
         ". forward ."
-        "left . right"
+        "left stop right"
         ". backward .";
     gap: 10px;
     width: 240px;
@@ -101,5 +101,6 @@ select {
 
 #btnForward { grid-area: forward; }
 #btnLeft { grid-area: left; }
+#btnStop { grid-area: stop; }
 #btnRight { grid-area: right; }
 #btnBackward { grid-area: backward; }

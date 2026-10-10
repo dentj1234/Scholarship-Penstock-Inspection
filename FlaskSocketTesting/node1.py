@@ -65,11 +65,13 @@ def try_connect():
     except Exception:
         pass
 
-# Telemetry state machine variables (mirrors your PIC code logic)
+# PIC telemetry frame: two sync bytes followed by one byte per channel.
 last_char = 0
 this_char = 0
-telemetry_packet = [0, 0, 0]
+telemetry_packet = bytearray(4)
 packet_runner = 0
+TELEMETRY_PACKET_LENGTH = 4
+CURRENT_BYTE_STEP_AMPS = 0.2  # PIC encodes current as 0.2 A per byte count.
 
 # Payload array: Header 1, Header 2, Forward, Backward, Turn Left, Turn Right, Motor Speed, Fan Speed.
 # Start with all movement flags clear so the PIC receives a stopped command at startup.
@@ -110,33 +112,45 @@ if __name__ == '__main__':
                 last_char = this_char
                 this_char = byte_in[0]
 
-                # PIC telemetry packet: 0xA1, 0xB2, then the battery byte.
-                if this_char == 0xB2 and last_char == 0xA1:
-                    telemetry_packet[0] = 0xA1
-                    telemetry_packet[1] = 0xB2
-                    packet_runner = 2 # Start filling data at index 2
-                
-                elif packet_runner >= 2:
+                # Look for the sync pair only while idle. The two channel bytes
+                # may contain either sync value, so don't restart mid-frame.
+                if packet_runner == 0:
+                    if this_char == 0xB2 and last_char == 0xA1:
+                        telemetry_packet[0] = 0xA1
+                        telemetry_packet[1] = 0xB2
+                        packet_runner = 2
+                else:
                     telemetry_packet[packet_runner] = this_char
                     packet_runner += 1
 
-                    # Once we have collected all 3 bytes of the telemetry packet
-                    if packet_runner == 3:
-                        packet_runner = 0 # Reset for the next packet
-                        
+                    if packet_runner == TELEMETRY_PACKET_LENGTH:
+                        packet_runner = 0
+
                         battery_byte = telemetry_packet[2]
+                        current_byte = telemetry_packet[3]
                         
                         # Convert 8-bit byte back to real 3S battery voltage
                         estimated_adc = battery_byte * 16
                         pin_voltage = (estimated_adc / 4095.0) * 3.3
                         battery_voltage = round(pin_voltage * 4, 2)
-                        
-                        print(f"RECEIVED BATTERY TELEMETRY: {battery_voltage}V (byte={battery_byte})", flush=True)
+
+                        current_amps = round(current_byte * CURRENT_BYTE_STEP_AMPS, 1)
+
+                        print(
+                            f"RECEIVED TELEMETRY: battery={battery_voltage}V, "
+                            f"total_current={current_amps}A "
+                            f"(current_channel={current_byte}, battery_byte={battery_byte})",
+                            flush=True,
+                        )
 
                         # Emit to Socket.IO if connected
                         if sio.connected:
                             try:
-                                telemetry_data = {'battery_voltage': battery_voltage, 'node': '0'}
+                                telemetry_data = {
+                                    'battery_voltage': battery_voltage,
+                                    'current_a': current_amps,
+                                    'node': '0',
+                                }
                                 sio.emit('robot_telemetry', telemetry_data)
                             except Exception as e:
                                 print(f"Emit failed: {e}")

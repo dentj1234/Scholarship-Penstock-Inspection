@@ -162,7 +162,13 @@ document.getElementById('nodeSelect').addEventListener('change', () => {
 });
 
 socket.on('update_telemetry', (data) => {
-    const telemetrySpan = document.getElementById('telemetryData');
+    const nodeId = String(data.node);
+    const telemetrySpan = document.getElementById(`telemetryNode${nodeId}`);
+    if (!telemetrySpan) {
+        console.warn(`Telemetry received for unknown node: ${nodeId}`, data);
+        return;
+    }
+
     const batteryVoltage = data.battery_voltage ?? data.battery;
     const batteryText = batteryVoltage === undefined
         ? 'Battery: unavailable'
@@ -170,5 +176,8 @@ socket.on('update_telemetry', (data) => {
     const currentText = data.current_a === undefined
         ? 'Current: unavailable'
         : `Total current: ${Number(data.current_a).toFixed(1)}A`;
-    telemetrySpan.innerText = `Node: ${data.node} | ${batteryText} | ${currentText}`;
+    const temperatureText = data.temperature_c === undefined
+        ? 'Temperature: unavailable'
+        : `Temperature: ${Number(data.temperature_c).toFixed(0)}°C`;
+    telemetrySpan.innerText = `${batteryText} | ${currentText} | ${temperatureText}`;
 });

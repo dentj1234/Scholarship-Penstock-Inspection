@@ -65,13 +65,17 @@ def try_connect():
     except Exception:
         pass
 
-# PIC telemetry frame: two sync bytes followed by one byte per channel.
+# PIC telemetry frame: two sync bytes followed by one byte per channel
+# (battery ADC, scaled current, temperature ADC).
 last_char = 0
 this_char = 0
-telemetry_packet = bytearray(4)
+telemetry_packet = bytearray(5)
 packet_runner = 0
-TELEMETRY_PACKET_LENGTH = 4
+TELEMETRY_PACKET_LENGTH = 5
 CURRENT_BYTE_STEP_AMPS = 0.2  # PIC encodes current as 0.2 A per byte count.
+ADC_REFERENCE_VOLTS = 3.3
+TEMPERATURE_ZERO_C_VOLTS = 0.400
+TEMPERATURE_SLOPE_VOLTS_PER_C = 0.0195
 
 # Payload array: Header 1, Header 2, Forward, Backward, Turn Left, Turn Right, Motor Speed, Fan Speed.
 # Start with all movement flags clear so the PIC receives a stopped command at startup.
@@ -112,8 +116,8 @@ if __name__ == '__main__':
                 last_char = this_char
                 this_char = byte_in[0]
 
-                # Look for the sync pair only while idle. The two channel bytes
-                # may contain either sync value, so don't restart mid-frame.
+                # Look for the sync pair only while idle. Channel bytes may
+                # contain either sync value, so don't restart mid-frame.
                 if packet_runner == 0:
                     if this_char == 0xB2 and last_char == 0xA1:
                         telemetry_packet[0] = 0xA1
@@ -128,6 +132,7 @@ if __name__ == '__main__':
 
                         battery_byte = telemetry_packet[2]
                         current_byte = telemetry_packet[3]
+                        temperature_byte = telemetry_packet[4]
                         
                         # Convert 8-bit byte back to real 3S battery voltage
                         estimated_adc = battery_byte * 16
@@ -135,11 +140,20 @@ if __name__ == '__main__':
                         battery_voltage = round(pin_voltage * 4, 2)
 
                         current_amps = round(current_byte * CURRENT_BYTE_STEP_AMPS, 1)
+                        temperature_adc = temperature_byte * 16
+                        temperature_pin_voltage = (
+                            temperature_adc / 4095.0
+                        ) * ADC_REFERENCE_VOLTS
+                        temperature_c = round(
+                            (temperature_pin_voltage - TEMPERATURE_ZERO_C_VOLTS)
+                            / TEMPERATURE_SLOPE_VOLTS_PER_C
+                        )
 
                         print(
                             f"RECEIVED TELEMETRY: battery={battery_voltage}V, "
-                            f"total_current={current_amps}A "
-                            f"(current_channel={current_byte}, battery_byte={battery_byte})",
+                            f"total_current={current_amps}A, temperature={temperature_c}C "
+                            f"(current_channel={current_byte}, temp_channel={temperature_byte}, "
+                            f"battery_byte={battery_byte})",
                             flush=True,
                         )
 
@@ -149,6 +163,7 @@ if __name__ == '__main__':
                                 telemetry_data = {
                                     'battery_voltage': battery_voltage,
                                     'current_a': current_amps,
+                                    'temperature_c': temperature_c,
                                     'node': '0',
                                 }
                                 sio.emit('robot_telemetry', telemetry_data)

@@ -3,8 +3,8 @@
 <head>
     <title>Penstock Control</title>
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='testingmain.js', v='telemetry-3') }}" defer></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='testingstyles.css', v='telemetry-3') }}">
+    <script src="{{ url_for('static', filename='testingmain.js', v='telemetry-4') }}" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='testingstyles.css', v='telemetry-4') }}">
 </head>
 <body>
     <div class="main-container">
@@ -26,7 +26,15 @@
                 </div>
 
                 <div class="telemetry-box">
-                    <strong>Telemetry:</strong> <span id="telemetryData">Waiting for data...</span>
+                    <strong>Telemetry</strong>
+                    <div class="telemetry-node">
+                        <strong>Node 0:</strong>
+                        <span id="telemetryNode0">Waiting for data...</span>
+                    </div>
+                    <div class="telemetry-node">
+                        <strong>Node 2:</strong>
+                        <span id="telemetryNode2">Waiting for data...</span>
+                    </div>
                 </div>
             </div>
             <p class="control-hint">Press and hold a direction to move. Release to stop.</p>

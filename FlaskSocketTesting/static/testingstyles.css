@@ -59,7 +59,7 @@ iframe {
 }
 
 .telemetry-box {
-    flex: 1;
+    flex: 2;
     background-color: #161616;
     border: 1px solid #333;
     padding: 10px 14px;
@@ -67,7 +67,14 @@ iframe {
     font-size: 14px;
     color: #00ffcc;
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+}
+
+.telemetry-node {
+    font-size: 13px;
+    line-height: 1.35;
 }
 
 .dpad-container {

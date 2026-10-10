@@ -3,8 +3,8 @@
 <head>
     <title>Penstock Control</title>
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='testingmain.js') }}" defer></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='testingstyles.css') }}">
+    <script src="{{ url_for('static', filename='testingmain.js', v='hold-control-1') }}" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='testingstyles.css', v='hold-control-1') }}">
 </head>
 <body>
     <div class="main-container">
@@ -29,14 +29,15 @@
                     <strong>Telemetry:</strong> <span id="telemetryData">Waiting for data...</span>
                 </div>
             </div>
+            <p class="control-hint">Press and hold a direction to move. Release to stop.</p>
         </div>
 
         <div class="dpad-container">
-            <button class="cmd-btn" data-action="forward" id="btnForward">Forward</button>
-            <button class="cmd-btn" data-action="left" id="btnLeft">Left</button>
-            <button class="cmd-btn" data-action="stop" id="btnStop">Stop</button>
-            <button class="cmd-btn" data-action="right" id="btnRight">Right</button>
-            <button class="cmd-btn" data-action="backward" id="btnBackward">Backward</button>
+            <button type="button" class="cmd-btn" data-action="forward" id="btnForward">Forward</button>
+            <button type="button" class="cmd-btn" data-action="left" id="btnLeft">Left</button>
+            <button type="button" class="cmd-btn" data-action="stop" id="btnStop">STOP</button>
+            <button type="button" class="cmd-btn" data-action="right" id="btnRight">Right</button>
+            <button type="button" class="cmd-btn" data-action="backward" id="btnBackward">Backward</button>
         </div>
     </div>
 </body>

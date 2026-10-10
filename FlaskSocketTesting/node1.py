@@ -1,8 +1,12 @@
 import socketio
 import time
 import serial
+from threading import Lock
 
 sio = socketio.Client()
+control_lock = Lock()
+command_active = False
+last_control_time = 0.0
 
 ser = serial.Serial(
     port='/dev/ttyAMA0',
@@ -24,7 +28,16 @@ def disconnect():
 
 @sio.on('target_command')
 def handle_target_command(data):
+    global command_active, last_control_time
+
     action = data.get('action')
+
+    if action == 'keepalive':
+        with control_lock:
+            if command_active:
+                last_control_time = time.monotonic()
+        return
+
     direction_flags = {
         'forward':  (1, 0, 0, 0),
         'backward': (0, 1, 0, 0),
@@ -39,8 +52,12 @@ def handle_target_command(data):
         return
 
     # Payload bytes 2-5 are forward, backward, turn-left, and turn-right.
-    payload_array[2:6] = flags
-    print(f"COMMAND RECEIVED FROM BASE: {action}; UART payload: {payload_array}")
+    with control_lock:
+        payload_array[2:6] = flags
+        command_active = action != 'stop'
+        last_control_time = time.monotonic()
+        payload_snapshot = payload_array.copy()
+    print(f"COMMAND RECEIVED FROM BASE: {action}; UART payload: {payload_snapshot}", flush=True)
 
 def try_connect():
     try:
@@ -60,15 +77,27 @@ payload_array = [0x20, 0x40, 0, 0, 0, 0, 186, 200]
 
 if __name__ == '__main__':
     try_connect()
-    last_command_time = 0
+    last_command_time = 0.0
 
     try:
         while True:
+            timed_out = False
+            with control_lock:
+                if command_active and time.monotonic() - last_control_time > 0.75:
+                    payload_array[2:6] = (0, 0, 0, 0)
+                    command_active = False
+                    timed_out = True
+                payload_snapshot = bytes(payload_array)
+
+            if timed_out:
+                print("Control heartbeat expired; sending stop to PIC", flush=True)
+
             # 1. Send command packet to PIC every 0.1 seconds
-            if time.time() - last_command_time >= 0.1:
+            now = time.monotonic()
+            if now - last_command_time >= 0.1:
                 try:
-                    ser.write(bytes(payload_array))
-                    last_command_time = time.time()
+                    ser.write(payload_snapshot)
+                    last_command_time = now
                 except Exception as uart_err:
                     print(f"UART Write Error: {uart_err}")
 

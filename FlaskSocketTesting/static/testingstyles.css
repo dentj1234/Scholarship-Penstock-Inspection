@@ -95,6 +95,21 @@ iframe {
     background-color: #444;
 }
 
+.cmd-btn {
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#btnStop {
+    background-color: #8b1e1e;
+}
+
+.control-hint {
+    color: #c7c7c7;
+    font-size: 13px;
+}
+
 select {
     width: 100%;
 }

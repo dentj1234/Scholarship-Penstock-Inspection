@@ -18,6 +18,8 @@ def server_response(data):
 # Listen for commands explicitly sent to this node
 @sio.on('target_command')
 def handle_target_command(data):
+    if data.get('action') == 'keepalive':
+        return
     print(f"COMMAND RECEIVED FROM BASE: {data}")
     # Add your hardware trigger code here (e.g., control motors, read sensors)
 

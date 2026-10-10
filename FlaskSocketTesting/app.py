@@ -67,14 +67,24 @@ def handle_web_command(data):
         'status': 'forwarded' if sent else 'node_not_registered',
     }
 
-def send_command(node_name, command_payload):
+@socketio.on('web_control_keepalive')
+def handle_web_control_keepalive(data):
+    # Heartbeats refresh the node's deadman timer without repeating the
+    # movement command or filling the service journal with command logs.
+    target_node = str(data.get('target_node'))
+    sent = send_command(target_node, {'action': 'keepalive'}, log=False)
+    return {'ok': sent}
+
+def send_command(node_name, command_payload, log=True):
     target_sid = node_to_sid.get(node_name)
     if target_sid:
         socketio.emit('target_command', command_payload, to=target_sid)
-        print(f"Forwarded command to node={node_name} payload={command_payload!r}", flush=True)
+        if log:
+            print(f"Forwarded command to node={node_name} payload={command_payload!r}", flush=True)
         return True
     else:
-        print(f"No active session registered for node={node_name}", flush=True)
+        if log:
+            print(f"No active session registered for node={node_name}", flush=True)
         return False
 
 @app.route('/')

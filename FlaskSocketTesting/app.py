@@ -58,12 +58,29 @@ def handle_telemetry(data):
 def handle_web_command(data):
     target_node = str(data.get('target_node'))
     action = data.get('action')
-    print(f"Web command received: node={target_node} action={action}", flush=True)
-    sent = send_command(target_node, {'action': action})
+    command_payload = {'action': action}
+    if action == 'fan_speed':
+        try:
+            speed = int(data.get('speed'))
+        except (TypeError, ValueError):
+            speed = 0
+        if speed < 1 or speed > 5:
+            print(f"Rejected fan speed command: node={target_node} speed={data.get('speed')!r}", flush=True)
+            return {
+                'ok': False,
+                'target_node': target_node,
+                'action': action,
+                'status': 'invalid_fan_speed',
+            }
+        command_payload['speed'] = speed
+
+    print(f"Web command received: node={target_node} payload={command_payload!r}", flush=True)
+    sent = send_command(target_node, command_payload)
     return {
         'ok': sent,
         'target_node': target_node,
         'action': action,
+        'speed': command_payload.get('speed'),
         'status': 'forwarded' if sent else 'node_not_registered',
     }
 

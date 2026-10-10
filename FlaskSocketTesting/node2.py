@@ -1,8 +1,12 @@
 import socketio
 import time
 import serial
+from threading import Lock
 
 sio = socketio.Client()
+control_lock = Lock()
+command_active = False
+last_control_time = 0.0
 ser = serial.Serial(
     port='/dev/ttyAMA0',
     baudrate=115200,
@@ -18,6 +22,7 @@ CURRENT_BYTE_STEP_AMPS = 0.2
 ADC_REFERENCE_VOLTS = 3.3
 TEMPERATURE_ZERO_C_VOLTS = 0.400
 TEMPERATURE_SLOPE_VOLTS_PER_C = 0.0195
+payload_array = [0x20, 0x40, 0, 0, 0, 0, 186, 1]
 
 
 @sio.event
@@ -37,8 +42,49 @@ def disconnect():
 
 @sio.on('target_command')
 def handle_target_command(data):
-    if data.get('action') != 'keepalive':
-        print(f"COMMAND RECEIVED FROM BASE: {data}", flush=True)
+    global command_active, last_control_time
+
+    action = data.get('action')
+    if action == 'fan_speed':
+        try:
+            speed = int(data.get('speed'))
+        except (TypeError, ValueError):
+            print(f"Ignoring invalid fan speed command: {data}", flush=True)
+            return
+        if speed < 1 or speed > 5:
+            print(f"Ignoring out-of-range fan speed command: {data}", flush=True)
+            return
+
+        with control_lock:
+            payload_array[7] = speed
+            payload_snapshot = payload_array.copy()
+        print(f"FAN SPEED RECEIVED FROM BASE: level={speed}; UART payload: {payload_snapshot}", flush=True)
+        return
+
+    if action == 'keepalive':
+        with control_lock:
+            if command_active:
+                last_control_time = time.monotonic()
+        return
+
+    direction_flags = {
+        'forward':  (1, 0, 0, 0),
+        'backward': (0, 1, 0, 0),
+        'left':     (0, 0, 1, 0),
+        'right':    (0, 0, 0, 1),
+        'stop':     (0, 0, 0, 0),
+    }
+    flags = direction_flags.get(action)
+    if flags is None:
+        print(f"Ignoring unknown command: {data}", flush=True)
+        return
+
+    with control_lock:
+        payload_array[2:6] = flags
+        command_active = action != 'stop'
+        last_control_time = time.monotonic()
+        payload_snapshot = payload_array.copy()
+    print(f"COMMAND RECEIVED FROM BASE: {action}; UART payload: {payload_snapshot}", flush=True)
 
 
 def try_connect():
@@ -51,9 +97,25 @@ def try_connect():
 if __name__ == '__main__':
     try_connect()
     last_connect_attempt = time.monotonic()
+    last_command_time = 0.0
 
     try:
         while True:
+            with control_lock:
+                if command_active and time.monotonic() - last_control_time > 0.75:
+                    payload_array[2:6] = (0, 0, 0, 0)
+                    command_active = False
+                    print("Control heartbeat expired; sending stop to PIC", flush=True)
+                payload_snapshot = bytes(payload_array)
+
+            now = time.monotonic()
+            if now - last_command_time >= 0.1:
+                try:
+                    ser.write(payload_snapshot)
+                    last_command_time = now
+                except Exception as uart_err:
+                    print(f"UART Write Error: {uart_err}", flush=True)
+
             while ser.in_waiting > 0:
                 byte_in = ser.read(1)
                 if not byte_in:

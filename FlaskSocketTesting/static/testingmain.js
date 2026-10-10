@@ -3,6 +3,8 @@ const socket = io();
 let activeControl = null;
 let keepaliveTimer = null;
 let lastControlTarget = null;
+const fanSpeedByNode = { '0': 1, '2': 1 };
+const fanDutyPercentByLevel = [0, 10, 20, 30, 50];
 
 socket.on('connect', () => {
     console.log(`Connected to base Socket.IO server: ${socket.id}`);
@@ -41,6 +43,35 @@ function sendRobotCommand(targetNode, action) {
 
 function selectedNode() {
     return document.getElementById('nodeSelect').value;
+}
+
+function updateFanSpeedDisplay() {
+    const level = fanSpeedByNode[selectedNode()] ?? 1;
+    document.getElementById('fanSpeedValue').textContent = level;
+    document.getElementById('fanSpeedDuty').textContent = `${fanDutyPercentByLevel[level - 1]}% PWM duty`;
+}
+
+function sendFanSpeed(speed) {
+    const targetNode = selectedNode();
+    socket.emit('web_trigger_command', {
+        target_node: targetNode,
+        action: 'fan_speed',
+        speed: speed
+    }, (ack) => {
+        console.log('Base station fan speed result:', ack);
+    });
+    console.log(`Fan speed requested: level ${speed} to Node ${targetNode}; connected=${socket.connected}`);
+}
+
+function changeFanSpeed(delta) {
+    const targetNode = selectedNode();
+    const currentSpeed = fanSpeedByNode[targetNode] ?? 1;
+    const newSpeed = Math.max(1, Math.min(5, currentSpeed + delta));
+    if (newSpeed === currentSpeed) return;
+
+    fanSpeedByNode[targetNode] = newSpeed;
+    updateFanSpeedDisplay();
+    sendFanSpeed(newSpeed);
 }
 
 function clearActiveControl() {
@@ -159,7 +190,12 @@ document.addEventListener('visibilitychange', () => {
 });
 document.getElementById('nodeSelect').addEventListener('change', () => {
     if (activeControl) stopControl();
+    updateFanSpeedDisplay();
 });
+
+document.getElementById('fanSpeedDown').addEventListener('click', () => changeFanSpeed(-1));
+document.getElementById('fanSpeedUp').addEventListener('click', () => changeFanSpeed(1));
+updateFanSpeedDisplay();
 
 socket.on('update_telemetry', (data) => {
     const nodeId = String(data.node);

@@ -3,8 +3,8 @@
 <head>
     <title>Penstock Control</title>
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='testingmain.js', v='telemetry-4') }}" defer></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='testingstyles.css', v='telemetry-4') }}">
+    <script src="{{ url_for('static', filename='testingmain.js', v='fan-duty-2') }}" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='testingstyles.css', v='fan-duty-2') }}">
 </head>
 <body>
     <div class="main-container">
@@ -46,6 +46,19 @@
             <button type="button" class="cmd-btn" data-action="stop" id="btnStop">STOP</button>
             <button type="button" class="cmd-btn" data-action="right" id="btnRight">Right</button>
             <button type="button" class="cmd-btn" data-action="backward" id="btnBackward">Backward</button>
+
+            <div class="fan-speed-control" id="fanSpeedControl">
+                <strong>Fan speed</strong>
+                <div class="fan-speed-stepper">
+                    <button type="button" id="fanSpeedDown" aria-label="Decrease fan speed">−</button>
+                    <span>
+                        <strong id="fanSpeedValue">1</strong> / 5<br>
+                        <small id="fanSpeedDuty">0% PWM duty</small>
+                    </span>
+                    <button type="button" id="fanSpeedUp" aria-label="Increase fan speed">+</button>
+                </div>
+                <small>Selected node</small>
+            </div>
         </div>
     </div>
 </body>

@@ -32,6 +32,22 @@ def handle_target_command(data):
 
     action = data.get('action')
 
+    if action == 'fan_speed':
+        try:
+            speed = int(data.get('speed'))
+        except (TypeError, ValueError):
+            print(f"Ignoring invalid fan speed command: {data}", flush=True)
+            return
+        if speed < 1 or speed > 5:
+            print(f"Ignoring out-of-range fan speed command: {data}", flush=True)
+            return
+
+        with control_lock:
+            payload_array[7] = speed
+            payload_snapshot = payload_array.copy()
+        print(f"FAN SPEED RECEIVED FROM BASE: level={speed}; UART payload: {payload_snapshot}", flush=True)
+        return
+
     if action == 'keepalive':
         with control_lock:
             if command_active:
@@ -79,7 +95,7 @@ TEMPERATURE_SLOPE_VOLTS_PER_C = 0.0195
 
 # Payload array: Header 1, Header 2, Forward, Backward, Turn Left, Turn Right, Motor Speed, Fan Speed.
 # Start with all movement flags clear so the PIC receives a stopped command at startup.
-payload_array = [0x20, 0x40, 0, 0, 0, 0, 186, 200]
+payload_array = [0x20, 0x40, 0, 0, 0, 0, 186, 1]
 
 if __name__ == '__main__':
     try_connect()

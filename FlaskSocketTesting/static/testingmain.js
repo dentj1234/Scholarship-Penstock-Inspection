@@ -163,5 +163,8 @@ document.getElementById('nodeSelect').addEventListener('change', () => {
 
 socket.on('update_telemetry', (data) => {
     const telemetrySpan = document.getElementById('telemetryData');
-    telemetrySpan.innerText = `Node: ${data.node} | Battery: ${data.battery}V`;
+    const batteryVoltage = data.battery_voltage ?? data.battery;
+    telemetrySpan.innerText = batteryVoltage === undefined
+        ? `Node: ${data.node} | Battery: unavailable`
+        : `Node: ${data.node} | Battery: ${batteryVoltage}V`;
 });

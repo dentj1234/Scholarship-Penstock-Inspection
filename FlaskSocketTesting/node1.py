@@ -110,10 +110,10 @@ if __name__ == '__main__':
                 last_char = this_char
                 this_char = byte_in[0]
 
-                # Check for 2-byte sync header: 0x30 followed by 0x50 ('0', 'P')
-                if this_char == 0x50 and last_char == 0x30:
-                    telemetry_packet[0] = 0x30
-                    telemetry_packet[1] = 0x50
+                # PIC telemetry packet: 0xA1, 0xB2, then the battery byte.
+                if this_char == 0xB2 and last_char == 0xA1:
+                    telemetry_packet[0] = 0xA1
+                    telemetry_packet[1] = 0xB2
                     packet_runner = 2 # Start filling data at index 2
                 
                 elif packet_runner >= 2:
@@ -131,7 +131,7 @@ if __name__ == '__main__':
                         pin_voltage = (estimated_adc / 4095.0) * 3.3
                         battery_voltage = round(pin_voltage * 4, 2)
                         
-                        print(f"🔥 RECEIVED BATTERY TELEMETRY: {battery_voltage}V (Byte: {battery_byte})")
+                        print(f"RECEIVED BATTERY TELEMETRY: {battery_voltage}V (byte={battery_byte})", flush=True)
 
                         # Emit to Socket.IO if connected
                         if sio.connected:

@@ -3,7 +3,7 @@ const socket = io();
 let activeControl = null;
 let keepaliveTimer = null;
 let lastControlTarget = null;
-const fanSpeedByNode = { '0': 1, '2': 1 };
+const fanSpeedByNode = { '0': 1, '1': 1 };
 const fanDutyPercentByLevel = [0, 10, 20, 30, 50];
 
 socket.on('connect', () => {

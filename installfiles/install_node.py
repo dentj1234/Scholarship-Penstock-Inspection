@@ -17,14 +17,14 @@ print("--- 🤖 Setting Up Penstock Node Pi ---")
 
 # 1. Select Node Index & Setup Parameters
 
-node_idx = input("Enter Node Index (0 for End Robot [192.168.1.2], 1 for Middle Relay [192.168.1.3]): ").strip()
+node_idx = input("Enter Node ID (0 for End Robot [192.168.1.2], 1 for Repeater [192.168.1.3]): ").strip()
 
 if node_idx == "0":
     node_ip = "192.168.1.2"
     node_name = "End Robot"
 elif node_idx == "1":
     node_ip = "192.168.1.3"
-    node_name = "Middle Relay"
+    node_name = "Repeater"
 else:
     print("Invalid node index selected! Must be 0 or 1.")
     sys.exit(1)
@@ -116,6 +116,8 @@ Wants=network-online.target mediamtx.service
 User=jaydenrobot
 Group=jaydenrobot
 WorkingDirectory={node_dir}
+Environment=PENSTOCK_NODE_ID={node_idx}
+ExecStartPre=+/usr/bin/pinctrl FAN_PWM op dl
 ExecStart=/usr/bin/python3 -u {main_script}
 Restart=always
 RestartSec=3
@@ -203,4 +205,5 @@ run_cmd("systemctl start node_code.service")
 
 print("\n---------- Node Setup Finished Successfully! ----------")
 print(f"Assigned Static IP: {node_ip}")
+print(f"Node ID passed to node_code.service: {node_idx}")
 print(f"Place your node code script in: {node_dir}/node_daemon.py")

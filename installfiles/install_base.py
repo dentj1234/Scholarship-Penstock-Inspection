@@ -100,9 +100,9 @@ os.makedirs(base_dir, exist_ok=True)
 subprocess.run(["chown", "-R", "jaydenrobot:jaydenrobot", base_dir], check=True)
 subprocess.run(["chmod", "-R", "775", base_dir], check=True)
 
-# Point systemd directly to your main Flask entry point
-# Change 'base_script.py' to your actual Flask file name if it's different (e.g., app.py)
-main_script = f"{base_dir}/BaseCode.py"
+# Run the current Socket.IO application. Keep app.py, templates/, and static/
+# together in this directory when deploying the base station files.
+main_script = f"{base_dir}/app.py"
 
 print("Creating basecode.service...")
 base_service_content = f"""[Unit]
@@ -114,7 +114,8 @@ Wants=network-online.target
 User=jaydenrobot
 Group=jaydenrobot
 WorkingDirectory={base_dir}
-ExecStart=/usr/bin/python3 {main_script}
+ExecStartPre=+/usr/bin/pinctrl FAN_PWM op dl
+ExecStart=/usr/bin/python3 -u {main_script}
 Restart=always
 RestartSec=3
 
@@ -153,4 +154,4 @@ if unifi_url:
         os.remove(installer_path)
 
 print("\n✅ Base Station Setup Finished!")
-print(f"Place your python script in: {base_dir}/base_script.py")
+print(f"Place app.py, templates/, and static/ in: {base_dir}")

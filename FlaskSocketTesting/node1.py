@@ -1,9 +1,11 @@
 import socketio
 import time
 import serial
+import os
 from threading import Lock
 
 sio = socketio.Client()
+NODE_ID = os.environ.get('PENSTOCK_NODE_ID', '0').strip()
 control_lock = Lock()
 command_active = False
 last_control_time = 0.0
@@ -20,7 +22,7 @@ def connect():
     def registration_ack(response):
         print(f"Base station registration response: {response}")
 
-    sio.emit('register_node', {'node': '0'}, callback=registration_ack)
+    sio.emit('register_node', {'node': NODE_ID}, callback=registration_ack)
 
 @sio.event
 def disconnect():
@@ -98,6 +100,7 @@ TEMPERATURE_SLOPE_VOLTS_PER_C = 0.0195
 payload_array = [0x20, 0x40, 0, 0, 0, 0, 186, 1]
 
 if __name__ == '__main__':
+    print(f"Starting node daemon with ID {NODE_ID}", flush=True)
     try_connect()
     last_command_time = 0.0
 
@@ -180,7 +183,7 @@ if __name__ == '__main__':
                                     'battery_voltage': battery_voltage,
                                     'current_a': current_amps,
                                     'temperature_c': temperature_c,
-                                    'node': '0',
+                                    'node': NODE_ID,
                                 }
                                 sio.emit('robot_telemetry', telemetry_data)
                             except Exception as e:

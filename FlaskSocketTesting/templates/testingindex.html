@@ -3,8 +3,8 @@
 <head>
     <title>Penstock Control</title>
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='testingmain.js', v='motor-speed-1') }}" defer></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='testingstyles.css', v='motor-speed-1') }}">
+    <script src="{{ url_for('static', filename='testingmain.js', v='ap-uplink-signal-1') }}" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='testingstyles.css', v='ap-uplink-signal-1') }}">
 </head>
 <body>
     <div class="main-container">
@@ -37,6 +37,16 @@
                     </div>
                 </div>
             </div>
+            <section class="ap-links-box" aria-live="polite">
+                <div class="ap-links-heading">
+                    <strong>UniFi AP links</strong>
+                    <span id="apLinksUpdated">Waiting for AP data...</span>
+                </div>
+                <div id="apLinkList" class="ap-link-list">
+                    <div class="ap-links-empty">Waiting for UniFi AP readings...</div>
+                </div>
+                <small>Wireless uplink signal is shown in dBm. Indicator bands: ≥−60 strong, ≥−70 marginal, below −70 weak.</small>
+            </section>
             <p class="control-hint">Press and hold a direction to move. Release to stop.</p>
         </div>
 

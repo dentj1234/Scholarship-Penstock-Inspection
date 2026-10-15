@@ -11,9 +11,10 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
+    width: 100%;
+    min-height: 100vh;
+    height: auto;
+    overflow: auto;
 }
 
 .main-container {
@@ -75,6 +76,83 @@ iframe {
 .telemetry-node {
     font-size: 13px;
     line-height: 1.35;
+}
+
+.ap-links-box {
+    width: 768px;
+    padding: 10px 12px;
+    border: 1px solid #333;
+    border-radius: 6px;
+    background: #161616;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ap-links-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 14px;
+}
+
+#apLinksUpdated,
+.ap-links-box > small {
+    color: #aaa;
+    font-size: 11px;
+}
+
+.ap-link-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 8px;
+}
+
+.ap-link-card {
+    min-width: 0;
+    padding: 8px;
+    border: 1px solid #393939;
+    border-radius: 6px;
+    background: #202020;
+}
+
+.ap-link-name {
+    overflow: hidden;
+    color: #fff;
+    font-size: 13px;
+    font-weight: bold;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ap-link-identity,
+.ap-link-detail {
+    overflow: hidden;
+    color: #aaa;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ap-link-metric {
+    margin: 5px 0 3px;
+    color: #ddd;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.ap-link-metric.strong { color: #35d39a; }
+.ap-link-metric.marginal { color: #ffd166; }
+.ap-link-metric.weak,
+.ap-link-metric.offline { color: #ff6b6b; }
+.ap-link-metric.wired { color: #70b7ff; }
+.ap-link-metric.unknown { color: #aaa; }
+
+.ap-links-empty {
+    color: #aaa;
+    font-size: 12px;
 }
 
 .dpad-container {

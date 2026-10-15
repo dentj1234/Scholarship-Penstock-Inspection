@@ -10,6 +10,7 @@ const motorSpeedPercentByLevel = [20, 40, 60, 80, 100];
 
 socket.on('connect', () => {
     console.log(`Connected to base Socket.IO server: ${socket.id}`);
+    socket.emit('request_unifi_ap_signals');
 
     // If the page reconnected after a network interruption, force a safe stop.
     if (lastControlTarget !== null) {
@@ -256,3 +257,86 @@ socket.on('update_telemetry', (data) => {
         : `Temperature: ${Number(data.temperature_c).toFixed(0)}°C`;
     telemetrySpan.innerText = `${batteryText} | ${currentText} | ${temperatureText}`;
 });
+
+function apSignalLabel(signalDbm) {
+    if (signalDbm >= -60) return 'Strong';
+    if (signalDbm >= -70) return 'Marginal';
+    return 'Weak';
+}
+
+function appendApDetail(container, label, value) {
+    if (value === undefined || value === null || value === '') return;
+    const detail = document.createElement('div');
+    detail.className = 'ap-link-detail';
+    detail.textContent = `${label}: ${value}`;
+    container.appendChild(detail);
+}
+
+function renderUniFiApSignals(payload) {
+    const updated = document.getElementById('apLinksUpdated');
+    const list = document.getElementById('apLinkList');
+    const aps = Array.isArray(payload?.aps) ? payload.aps : [];
+
+    if (payload?.updated_at) {
+        const timeText = new Date(payload.updated_at * 1000).toLocaleTimeString();
+        updated.textContent = payload.status === 'ok'
+            ? `Updated ${timeText}`
+            : `Last update ${timeText} · polling error`;
+    } else {
+        updated.textContent = payload?.message || 'Waiting for AP data...';
+    }
+
+    list.replaceChildren();
+    if (aps.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'ap-links-empty';
+        empty.textContent = payload?.message || 'No APs returned by UniFi.';
+        list.appendChild(empty);
+        return;
+    }
+
+    for (const ap of aps) {
+        const card = document.createElement('article');
+        card.className = 'ap-link-card';
+
+        const heading = document.createElement('div');
+        heading.className = 'ap-link-name';
+        heading.textContent = ap.name || 'UniFi AP';
+        card.appendChild(heading);
+
+        const identity = document.createElement('div');
+        identity.className = 'ap-link-identity';
+        identity.textContent = ap.mac || ap.ip || '';
+        card.appendChild(identity);
+
+        const metric = document.createElement('div');
+        if (!ap.online) {
+            metric.className = 'ap-link-metric offline';
+            metric.textContent = 'Offline';
+        } else if (ap.uplink_type === 'wireless'
+            && ap.signal_dbm !== null
+            && ap.signal_dbm !== undefined
+            && Number.isFinite(Number(ap.signal_dbm))) {
+            const signal = Number(ap.signal_dbm);
+            const quality = apSignalLabel(signal);
+            metric.className = `ap-link-metric ${quality.toLowerCase()}`;
+            metric.textContent = `${signal} dBm · ${quality}`;
+        } else if (ap.uplink_type === 'wire') {
+            metric.className = 'ap-link-metric wired';
+            metric.textContent = 'Wired uplink';
+        } else {
+            metric.className = 'ap-link-metric unknown';
+            metric.textContent = 'Uplink signal unavailable';
+        }
+        card.appendChild(metric);
+
+        const parent = ap.parent_name || ap.parent_mac;
+        if (parent) appendApDetail(card, 'Parent AP', parent);
+        if (ap.channel !== undefined && ap.channel !== null && ap.channel !== '') {
+            appendApDetail(card, 'Channel', ap.channel);
+        }
+        list.appendChild(card);
+    }
+}
+
+socket.on('unifi_ap_signals', renderUniFiApSignals);

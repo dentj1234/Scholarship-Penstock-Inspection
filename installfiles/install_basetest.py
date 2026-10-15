@@ -3,14 +3,26 @@ import os
 import sys
 import subprocess
 import urllib.request
+from getpass import getpass
 
 if os.geteuid() != 0:
     print("❌ Error: Must be run as root! Use: sudo python3 install_base.py")
     sys.exit(1)
 
+print("\nUniFi login for reading AP uplink signal")
+unifi_username = input("UniFi username: ").strip()
+unifi_password = getpass("UniFi password: ")
+if not unifi_username or not unifi_password:
+    print("❌ UniFi username and password are required for AP signal polling.")
+    sys.exit(1)
+
 def run_cmd(cmd):
     print(f"--> {cmd}")
     subprocess.run(cmd, shell=True, check=True)
+
+def quote_env_value(value):
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
 
 print("--- 🛰️ Setting Up Base Station Pi ---")
 
@@ -25,7 +37,7 @@ with open("/etc/sysctl.d/99-ipforward.conf", "w") as f:
 
 # 2. Install Base Packages (Done FIRST while internet is still active via DHCP)
 print("Installing Base Packages...")
-run_cmd("apt update && apt install -y isc-dhcp-server podman tcpdump python3-pip python3-flask python3-flask-socketio wget")
+run_cmd("apt update && apt install -y isc-dhcp-server podman tcpdump python3-pip python3-flask python3-flask-socketio python3-requests wget")
 
 # 3. Configure Netplan Static IP (Done AFTER packages are installed)
 print("Configuring Netplan...")
@@ -87,6 +99,17 @@ with open("/etc/systemd/system/isc-dhcp-server.service.d/override.conf", "w") as
 run_cmd("systemctl daemon-reload")
 run_cmd("systemctl enable isc-dhcp-server")
 
+# Save the UniFi credentials for the base service.
+unifi_env_dir = "/etc/basecode"
+unifi_env_path = f"{unifi_env_dir}/unifi.env"
+os.makedirs(unifi_env_dir, exist_ok=True)
+with open(unifi_env_path, "w") as f:
+    f.write("# UniFi local account used by the base app to read AP uplinks.\n")
+    f.write(f"UNIFI_USERNAME={quote_env_value(unifi_username)}\n")
+    f.write(f"UNIFI_PASSWORD={quote_env_value(unifi_password)}\n")
+subprocess.run(["chown", "root:jaydenrobot", unifi_env_path], check=True)
+subprocess.run(["chmod", "640", unifi_env_path], check=True)
+
 # 7. Increase fan speed to max
 print("Setting fan speed to max...")
 try:
@@ -112,6 +135,7 @@ Wants=network-online.target
 User=jaydenrobot
 Group=jaydenrobot
 WorkingDirectory={base_dir}
+EnvironmentFile=-/etc/basecode/unifi.env
 ExecStartPre=+/usr/bin/pinctrl FAN_PWM op dl
 ExecStart=/usr/bin/python3 -u {main_script}
 Restart=always

@@ -162,6 +162,7 @@ iframe {
         "left stop right"
         ". backward ."
         "motor motor motor"
+        "trim trim trim"
         "fan fan fan";
     gap: 10px;
     width: 240px;
@@ -202,6 +203,7 @@ select {
 }
 
 .motor-speed-control,
+.drive-trim-control,
 .fan-speed-control {
     display: flex;
     flex-direction: column;
@@ -220,6 +222,55 @@ select {
 
 .fan-speed-control {
     grid-area: fan;
+}
+
+.drive-trim-control {
+    grid-area: trim;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-top: 8px;
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius: 8px;
+    background: #161616;
+}
+
+.drive-trim-control label,
+.drive-trim-control small {
+    color: #aaa;
+    font-size: 12px;
+}
+
+.trim-entry-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#motorTrimPercent {
+    width: 100%;
+    min-width: 0;
+    padding: 10px;
+    border: 1px solid #555;
+    border-radius: 6px;
+    background: #222;
+    color: white;
+    font-size: 14px;
+}
+
+.trim-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.trim-actions button {
+    flex: 1;
+    padding: 9px 6px;
+}
+
+#motorTrimStatus {
+    color: #00ffcc;
 }
 
 .motor-speed-stepper,

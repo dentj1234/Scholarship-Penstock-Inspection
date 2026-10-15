@@ -76,6 +76,34 @@ def handle_target_command(data):
         print(f"FAN SPEED RECEIVED FROM BASE: level={speed}; UART payload: {payload_snapshot}", flush=True)
         return
 
+    if action == 'motor_trim':
+        side = str(data.get('side', '')).lower()
+        try:
+            percent = int(data.get('percent'))
+        except (TypeError, ValueError):
+            print(f"Ignoring invalid motor trim command: {data}", flush=True)
+            return
+
+        if side == 'none' and percent == 0:
+            trim_byte = 0
+        elif side == 'left' and 1 <= percent <= 20:
+            trim_byte = percent
+        elif side == 'right' and 1 <= percent <= 20:
+            trim_byte = 20 + percent
+        else:
+            print(f"Ignoring out-of-range motor trim command: {data}", flush=True)
+            return
+
+        with control_lock:
+            payload_array[8] = trim_byte
+            payload_snapshot = payload_array.copy()
+        print(
+            f"MOTOR TRIM RECEIVED FROM BASE: side={side} percent={percent}; "
+            f"UART payload: {payload_snapshot}",
+            flush=True,
+        )
+        return
+
     if action == 'keepalive':
         with control_lock:
             if command_active:
@@ -121,9 +149,9 @@ ADC_REFERENCE_VOLTS = 3.3
 TEMPERATURE_ZERO_C_VOLTS = 0.400
 TEMPERATURE_SLOPE_VOLTS_PER_C = 0.0195
 
-# Payload array: Header 1, Header 2, Forward, Backward, Turn Left, Turn Right, Motor Speed, Fan Speed.
-# Begin stopped at the selector's lowest motor speed (20%) and fan level 1.
-payload_array = [0x20, 0x40, 0, 0, 0, 0, 51, 1]
+# Payload array: Header 1, Header 2, direction flags, motor speed, fan speed,
+# and trim code (0=none, 1-20=left motor reduction, 21-40=right reduction).
+payload_array = [0x20, 0x40, 0, 0, 0, 0, 51, 1, 0]
 
 if __name__ == '__main__':
     print(f"Starting node daemon with ID {NODE_ID}", flush=True)

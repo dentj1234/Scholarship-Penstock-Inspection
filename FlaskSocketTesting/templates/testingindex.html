@@ -3,8 +3,8 @@
 <head>
     <title>Penstock Control</title>
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='testingmain.js', v='ap-uplink-signal-1') }}" defer></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='testingstyles.css', v='ap-uplink-signal-1') }}">
+    <script src="{{ url_for('static', filename='testingmain.js', v='motor-trim-2') }}" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='testingstyles.css', v='motor-trim-2') }}">
 </head>
 <body>
     <div class="main-container">
@@ -69,6 +69,26 @@
                 </div>
                 <small>Turns run at 35% of the selected drive speed.</small>
                 <small>Selected node</small>
+            </div>
+
+            <div class="drive-trim-control" id="driveTrimControl">
+                <strong>Straight drive trim</strong>
+                <label for="motorTrimSide">Motor to slow</label>
+                <select id="motorTrimSide">
+                    <option value="left">Left motor</option>
+                    <option value="right">Right motor</option>
+                </select>
+                <label for="motorTrimPercent">Reduction (1–20%)</label>
+                <div class="trim-entry-row">
+                    <input id="motorTrimPercent" type="number" min="1" max="20" step="1" value="5">
+                    <span>%</span>
+                </div>
+                <div class="trim-actions">
+                    <button type="button" id="applyMotorTrim">Apply</button>
+                    <button type="button" id="clearMotorTrim">Clear</button>
+                </div>
+                <small id="motorTrimStatus">Trim is off</small>
+                <small>Applies to forward/reverse only. If it curves left, try slowing the right motor; if it curves right, try slowing the left.</small>
             </div>
 
             <div class="fan-speed-control" id="fanSpeedControl">

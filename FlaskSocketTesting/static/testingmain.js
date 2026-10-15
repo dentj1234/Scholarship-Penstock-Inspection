@@ -7,6 +7,27 @@ const fanSpeedByNode = { '0': 1, '1': 1 };
 const fanDutyPercentByLevel = [0, 10, 20, 30, 50];
 const motorSpeedByNode = { '0': 1, '1': 1 };
 const motorSpeedPercentByLevel = [20, 40, 60, 80, 100];
+const motorTrimByNode = loadMotorTrimSettings();
+
+function loadMotorTrimSettings() {
+    const defaults = { '0': { side: 'none', percent: 0 }, '1': { side: 'none', percent: 0 } };
+    try {
+        const saved = JSON.parse(localStorage.getItem('motorTrimByNode') || '{}');
+        for (const nodeId of ['0', '1']) {
+            const trim = saved[nodeId];
+            const percent = Number(trim?.percent);
+            if (['left', 'right'].includes(trim?.side)
+                && Number.isInteger(percent)
+                && percent >= 1
+                && percent <= 20) {
+                defaults[nodeId] = { side: trim.side, percent };
+            }
+        }
+    } catch (error) {
+        console.warn('Could not load saved motor trim settings:', error);
+    }
+    return defaults;
+}
 
 socket.on('connect', () => {
     console.log(`Connected to base Socket.IO server: ${socket.id}`);
@@ -19,6 +40,15 @@ socket.on('connect', () => {
 
     // Keep the selected node's speed in sync after a page reconnect.
     sendMotorSpeed(motorSpeedByNode[selectedNode()] ?? 1);
+    sendMotorTrim(motorTrimByNode[selectedNode()]);
+});
+
+socket.on('node_registered', (data) => {
+    const nodeId = String(data?.node ?? '');
+    const trim = motorTrimByNode[nodeId];
+    if (trim) {
+        sendMotorTrim(trim, nodeId);
+    }
 });
 
 socket.on('connect_error', (error) => {
@@ -73,6 +103,62 @@ function sendMotorSpeed(speed) {
         console.log('Base station motor speed result:', ack);
     });
     console.log(`Motor speed requested: level ${speed} (${motorSpeedPercentByLevel[speed - 1]}%) to Node ${targetNode}; connected=${socket.connected}`);
+}
+
+function updateMotorTrimDisplay() {
+    const nodeId = selectedNode();
+    const trim = motorTrimByNode[nodeId] ?? { side: 'none', percent: 0 };
+    const sideField = document.getElementById('motorTrimSide');
+    const percentField = document.getElementById('motorTrimPercent');
+    const status = document.getElementById('motorTrimStatus');
+
+    sideField.value = trim.side === 'right' ? 'right' : 'left';
+    percentField.value = trim.percent > 0 ? trim.percent : 5;
+    status.textContent = trim.side === 'none'
+        ? `Node ${nodeId}: trim is off`
+        : `Node ${nodeId}: slowing the ${trim.side} motor by ${trim.percent}%`;
+}
+
+function sendMotorTrim(trim, targetNode = selectedNode()) {
+    socket.emit('web_trigger_command', {
+        target_node: targetNode,
+        action: 'motor_trim',
+        side: trim.side,
+        percent: trim.percent
+    }, (ack) => {
+        console.log('Base station motor trim result:', ack);
+        if (!ack?.ok) {
+            document.getElementById('motorTrimStatus').textContent =
+                `Trim not sent to Node ${targetNode}: ${ack?.status || 'node unavailable'}`;
+        }
+    });
+    console.log(`Motor trim requested: ${trim.side} ${trim.percent}% to Node ${targetNode}; connected=${socket.connected}`);
+}
+
+function applyMotorTrim() {
+    const side = document.getElementById('motorTrimSide').value;
+    const percentField = document.getElementById('motorTrimPercent');
+    const percent = Number(percentField.value);
+    if (!Number.isInteger(percent) || percent < 1 || percent > 20) {
+        percentField.setCustomValidity('Enter a whole number from 1 to 20.');
+        percentField.reportValidity();
+        return;
+    }
+
+    percentField.setCustomValidity('');
+    const nodeId = selectedNode();
+    motorTrimByNode[nodeId] = { side, percent };
+    localStorage.setItem('motorTrimByNode', JSON.stringify(motorTrimByNode));
+    updateMotorTrimDisplay();
+    sendMotorTrim(motorTrimByNode[nodeId]);
+}
+
+function clearMotorTrim() {
+    const nodeId = selectedNode();
+    motorTrimByNode[nodeId] = { side: 'none', percent: 0 };
+    localStorage.setItem('motorTrimByNode', JSON.stringify(motorTrimByNode));
+    updateMotorTrimDisplay();
+    sendMotorTrim(motorTrimByNode[nodeId]);
 }
 
 function changeMotorSpeed(delta) {
@@ -227,15 +313,20 @@ document.getElementById('nodeSelect').addEventListener('change', () => {
     if (activeControl) stopControl();
     updateFanSpeedDisplay();
     updateMotorSpeedDisplay();
+    updateMotorTrimDisplay();
     sendMotorSpeed(motorSpeedByNode[selectedNode()] ?? 1);
+    sendMotorTrim(motorTrimByNode[selectedNode()]);
 });
 
 document.getElementById('fanSpeedDown').addEventListener('click', () => changeFanSpeed(-1));
 document.getElementById('fanSpeedUp').addEventListener('click', () => changeFanSpeed(1));
 document.getElementById('motorSpeedDown').addEventListener('click', () => changeMotorSpeed(-1));
 document.getElementById('motorSpeedUp').addEventListener('click', () => changeMotorSpeed(1));
+document.getElementById('applyMotorTrim').addEventListener('click', applyMotorTrim);
+document.getElementById('clearMotorTrim').addEventListener('click', clearMotorTrim);
 updateFanSpeedDisplay();
 updateMotorSpeedDisplay();
+updateMotorTrimDisplay();
 
 socket.on('update_telemetry', (data) => {
     const nodeId = String(data.node);

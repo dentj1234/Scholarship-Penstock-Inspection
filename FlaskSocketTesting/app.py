@@ -180,6 +180,7 @@ def handle_register_node(data):
 
     register_node_session(node_name, request.sid)
     print(f"Registered node: node={node_name} sid={request.sid}", flush=True)
+    socketio.emit('node_registered', {'node': node_name}, skip_sid=request.sid)
     return {'ok': True, 'node': node_name}
 
 @socketio.on('robot_telemetry')
@@ -211,6 +212,27 @@ def handle_web_command(data):
                 'status': f'invalid_{action}',
             }
         command_payload['speed'] = speed
+    elif action == 'motor_trim':
+        trim_side = str(data.get('side', '')).lower()
+        try:
+            trim_percent = int(data.get('percent'))
+        except (TypeError, ValueError):
+            trim_percent = -1
+        valid_clear = trim_side == 'none' and trim_percent == 0
+        valid_trim = trim_side in ('left', 'right') and 1 <= trim_percent <= 20
+        if not (valid_clear or valid_trim):
+            print(
+                f"Rejected motor trim command: node={target_node} "
+                f"side={trim_side!r} percent={data.get('percent')!r}",
+                flush=True,
+            )
+            return {
+                'ok': False,
+                'target_node': target_node,
+                'action': action,
+                'status': 'invalid_motor_trim',
+            }
+        command_payload.update({'side': trim_side, 'percent': trim_percent})
 
     print(f"Web command received: node={target_node} payload={command_payload!r}", flush=True)
     sent = send_command(target_node, command_payload)
@@ -219,6 +241,8 @@ def handle_web_command(data):
         'target_node': target_node,
         'action': action,
         'speed': command_payload.get('speed'),
+        'side': command_payload.get('side'),
+        'percent': command_payload.get('percent'),
         'status': 'forwarded' if sent else 'node_not_registered',
     }
 

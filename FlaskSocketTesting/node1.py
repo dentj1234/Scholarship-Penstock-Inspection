@@ -6,6 +6,10 @@ from threading import Lock
 
 sio = socketio.Client()
 NODE_ID = os.environ.get('PENSTOCK_NODE_ID', '0').strip()
+MOTOR_SPEED_PERCENT_BY_LEVEL = (20, 40, 60, 80, 100)
+MOTOR_SPEED_BYTE_BY_LEVEL = tuple(
+    (percent * 255 + 50) // 100 for percent in MOTOR_SPEED_PERCENT_BY_LEVEL
+)
 control_lock = Lock()
 command_active = False
 last_control_time = 0.0
@@ -33,6 +37,28 @@ def handle_target_command(data):
     global command_active, last_control_time
 
     action = data.get('action')
+
+    if action == 'motor_speed':
+        try:
+            speed_level = int(data.get('speed'))
+        except (TypeError, ValueError):
+            print(f"Ignoring invalid motor speed command: {data}", flush=True)
+            return
+        if speed_level < 1 or speed_level > len(MOTOR_SPEED_BYTE_BY_LEVEL):
+            print(f"Ignoring out-of-range motor speed command: {data}", flush=True)
+            return
+
+        speed_percent = MOTOR_SPEED_PERCENT_BY_LEVEL[speed_level - 1]
+        speed_byte = MOTOR_SPEED_BYTE_BY_LEVEL[speed_level - 1]
+        with control_lock:
+            payload_array[6] = speed_byte
+            payload_snapshot = payload_array.copy()
+        print(
+            f"MOTOR SPEED RECEIVED FROM BASE: level={speed_level} "
+            f"({speed_percent}%); UART payload: {payload_snapshot}",
+            flush=True,
+        )
+        return
 
     if action == 'fan_speed':
         try:
@@ -96,8 +122,8 @@ TEMPERATURE_ZERO_C_VOLTS = 0.400
 TEMPERATURE_SLOPE_VOLTS_PER_C = 0.0195
 
 # Payload array: Header 1, Header 2, Forward, Backward, Turn Left, Turn Right, Motor Speed, Fan Speed.
-# Start with all movement flags clear so the PIC receives a stopped command at startup.
-payload_array = [0x20, 0x40, 0, 0, 0, 0, 186, 1]
+# Begin stopped at the selector's lowest motor speed (20%) and fan level 1.
+payload_array = [0x20, 0x40, 0, 0, 0, 0, 51, 1]
 
 if __name__ == '__main__':
     print(f"Starting node daemon with ID {NODE_ID}", flush=True)

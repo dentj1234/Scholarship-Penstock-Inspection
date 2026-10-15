@@ -5,6 +5,8 @@ let keepaliveTimer = null;
 let lastControlTarget = null;
 const fanSpeedByNode = { '0': 1, '1': 1 };
 const fanDutyPercentByLevel = [0, 10, 20, 30, 50];
+const motorSpeedByNode = { '0': 1, '1': 1 };
+const motorSpeedPercentByLevel = [20, 40, 60, 80, 100];
 
 socket.on('connect', () => {
     console.log(`Connected to base Socket.IO server: ${socket.id}`);
@@ -13,6 +15,9 @@ socket.on('connect', () => {
     if (lastControlTarget !== null) {
         sendRobotCommand(lastControlTarget, 'stop');
     }
+
+    // Keep the selected node's speed in sync after a page reconnect.
+    sendMotorSpeed(motorSpeedByNode[selectedNode()] ?? 1);
 });
 
 socket.on('connect_error', (error) => {
@@ -49,6 +54,35 @@ function updateFanSpeedDisplay() {
     const level = fanSpeedByNode[selectedNode()] ?? 1;
     document.getElementById('fanSpeedValue').textContent = level;
     document.getElementById('fanSpeedDuty').textContent = `${fanDutyPercentByLevel[level - 1]}% PWM duty`;
+}
+
+function updateMotorSpeedDisplay() {
+    const level = motorSpeedByNode[selectedNode()] ?? 1;
+    document.getElementById('motorSpeedValue').textContent = level;
+    document.getElementById('motorSpeedPercent').textContent = `${motorSpeedPercentByLevel[level - 1]}% of drive limit`;
+}
+
+function sendMotorSpeed(speed) {
+    const targetNode = selectedNode();
+    socket.emit('web_trigger_command', {
+        target_node: targetNode,
+        action: 'motor_speed',
+        speed: speed
+    }, (ack) => {
+        console.log('Base station motor speed result:', ack);
+    });
+    console.log(`Motor speed requested: level ${speed} (${motorSpeedPercentByLevel[speed - 1]}%) to Node ${targetNode}; connected=${socket.connected}`);
+}
+
+function changeMotorSpeed(delta) {
+    const targetNode = selectedNode();
+    const currentSpeed = motorSpeedByNode[targetNode] ?? 1;
+    const newSpeed = Math.max(1, Math.min(5, currentSpeed + delta));
+    if (newSpeed === currentSpeed) return;
+
+    motorSpeedByNode[targetNode] = newSpeed;
+    updateMotorSpeedDisplay();
+    sendMotorSpeed(newSpeed);
 }
 
 function sendFanSpeed(speed) {
@@ -191,11 +225,16 @@ document.addEventListener('visibilitychange', () => {
 document.getElementById('nodeSelect').addEventListener('change', () => {
     if (activeControl) stopControl();
     updateFanSpeedDisplay();
+    updateMotorSpeedDisplay();
+    sendMotorSpeed(motorSpeedByNode[selectedNode()] ?? 1);
 });
 
 document.getElementById('fanSpeedDown').addEventListener('click', () => changeFanSpeed(-1));
 document.getElementById('fanSpeedUp').addEventListener('click', () => changeFanSpeed(1));
+document.getElementById('motorSpeedDown').addEventListener('click', () => changeMotorSpeed(-1));
+document.getElementById('motorSpeedUp').addEventListener('click', () => changeMotorSpeed(1));
 updateFanSpeedDisplay();
+updateMotorSpeedDisplay();
 
 socket.on('update_telemetry', (data) => {
     const nodeId = String(data.node);

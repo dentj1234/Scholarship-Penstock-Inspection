@@ -59,18 +59,18 @@ def handle_web_command(data):
     target_node = str(data.get('target_node'))
     action = data.get('action')
     command_payload = {'action': action}
-    if action == 'fan_speed':
+    if action in ('fan_speed', 'motor_speed'):
         try:
             speed = int(data.get('speed'))
         except (TypeError, ValueError):
             speed = 0
         if speed < 1 or speed > 5:
-            print(f"Rejected fan speed command: node={target_node} speed={data.get('speed')!r}", flush=True)
+            print(f"Rejected {action} command: node={target_node} speed={data.get('speed')!r}", flush=True)
             return {
                 'ok': False,
                 'target_node': target_node,
                 'action': action,
-                'status': 'invalid_fan_speed',
+                'status': f'invalid_{action}',
             }
         command_payload['speed'] = speed
 

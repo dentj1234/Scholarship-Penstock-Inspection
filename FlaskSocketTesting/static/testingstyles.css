@@ -83,6 +83,7 @@ iframe {
         ". forward ."
         "left stop right"
         ". backward ."
+        "motor motor motor"
         "fan fan fan";
     gap: 10px;
     width: 240px;
@@ -122,8 +123,8 @@ select {
     width: 100%;
 }
 
+.motor-speed-control,
 .fan-speed-control {
-    grid-area: fan;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -135,12 +136,22 @@ select {
     background: #161616;
 }
 
+.motor-speed-control {
+    grid-area: motor;
+}
+
+.fan-speed-control {
+    grid-area: fan;
+}
+
+.motor-speed-stepper,
 .fan-speed-stepper {
     display: flex;
     align-items: center;
     gap: 16px;
 }
 
+.motor-speed-stepper button,
 .fan-speed-stepper button {
     width: 42px;
     height: 42px;
@@ -148,16 +159,19 @@ select {
     font-size: 24px;
 }
 
+.motor-speed-stepper span,
 .fan-speed-stepper span {
     min-width: 55px;
     text-align: center;
     font-size: 18px;
 }
 
+.motor-speed-control small,
 .fan-speed-control small {
     color: #aaa;
 }
 
+#motorSpeedPercent,
 #fanSpeedDuty {
     font-size: 12px;
 }

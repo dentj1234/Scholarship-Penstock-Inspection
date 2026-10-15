@@ -3,8 +3,8 @@
 <head>
     <title>Penstock Control</title>
     <script src="{{ url_for('static', filename='socket.io.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='testingmain.js', v='node-id-0-1') }}" defer></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='testingstyles.css', v='fan-duty-2') }}">
+    <script src="{{ url_for('static', filename='testingmain.js', v='motor-speed-1') }}" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='testingstyles.css', v='motor-speed-1') }}">
 </head>
 <body>
     <div class="main-container">
@@ -46,6 +46,20 @@
             <button type="button" class="cmd-btn" data-action="stop" id="btnStop">STOP</button>
             <button type="button" class="cmd-btn" data-action="right" id="btnRight">Right</button>
             <button type="button" class="cmd-btn" data-action="backward" id="btnBackward">Backward</button>
+
+            <div class="motor-speed-control" id="motorSpeedControl">
+                <strong>Motor speed</strong>
+                <div class="motor-speed-stepper">
+                    <button type="button" id="motorSpeedDown" aria-label="Decrease motor speed">−</button>
+                    <span>
+                        <strong id="motorSpeedValue">1</strong> / 5<br>
+                        <small id="motorSpeedPercent">20% of drive limit</small>
+                    </span>
+                    <button type="button" id="motorSpeedUp" aria-label="Increase motor speed">+</button>
+                </div>
+                <small>Turns run at 35% of the selected drive speed.</small>
+                <small>Selected node</small>
+            </div>
 
             <div class="fan-speed-control" id="fanSpeedControl">
                 <strong>Fan speed</strong>
